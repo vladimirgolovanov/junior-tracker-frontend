@@ -1,12 +1,22 @@
 import { useEffect, useState, FormEvent } from "react";
 import client from "../api/client";
+import useChildren from "../hooks/useChildren";
 
 export default function EventsPage() {
-  const [childId, setChildId] = useState(1);
+  const children = useChildren();
+  const [childId, setChildId] = useState<number | null>(null);
   const [events, setEvents] = useState<unknown[]>([]);
   const [error, setError] = useState("");
 
+  // Auto-select first child when loaded
+  useEffect(() => {
+    if (children.length > 0 && childId === null) {
+      setChildId(children[0].id);
+    }
+  }, [children]);
+
   async function loadEvents() {
+    if (childId === null) return;
     const { data, error: err } = await client.GET("/api/events/", {
       params: { query: { child_id: childId } },
     });
@@ -26,7 +36,7 @@ export default function EventsPage() {
     const fd = new FormData(e.currentTarget);
     await client.POST("/api/events/", {
       body: {
-        child_id: childId,
+        child_id: childId!,
         event_type_id: Number(fd.get("event_type_id")),
         occurred_at: new Date(fd.get("occurred_at") as string).toISOString(),
         description: (fd.get("description") as string) || null,
@@ -42,13 +52,15 @@ export default function EventsPage() {
       <h1>Events</h1>
       <div>
         <label>
-          Child ID:{" "}
-          <input
-            type="number"
-            value={childId}
+          Child:{" "}
+          <select
+            value={childId ?? ""}
             onChange={(e) => setChildId(Number(e.target.value))}
-            min={1}
-          />
+          >
+            {children.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
         </label>
       </div>
 
