@@ -1,0 +1,7 @@
+version: '3.1'
+services:
+  junior-tracker-vite-frontend:
+    image: ghcr.io/vladimirgolovanov/junior-tracker-frontend:latest
+    container_name: junior-tracker-vite-frontend
+    ports:
+      - '50981:80'
