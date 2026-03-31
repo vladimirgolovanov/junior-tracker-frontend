@@ -70,7 +70,7 @@ function DayColumn({ title, data }: { title: string; data: DayData }) {
   const bedtime = data.night_sleeps.find((item) => item.sleep_start)?.sleep_start;
 
   return (
-    <div style={{ flex: 1, fontSize: 13, lineHeight: 1.6 }}>
+    <div style={{ flex: 1, lineHeight: 1.6 }}>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
       {data.day_sleeps.map((item, i) => {
