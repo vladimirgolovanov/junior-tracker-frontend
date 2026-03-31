@@ -27,6 +27,8 @@ interface DayData {
   night_sleep_duration: string;
   day_sleep_duration: string;
   total_awake_duration: string;
+  current_sleep?: string;
+  current_awake?: string;
 }
 
 interface DashboardData {
@@ -91,6 +93,17 @@ function DayColumn({ title, data }: { title: string; data: DayData }) {
       {bedtime && (
         <div style={{ marginTop: 4 }}>Bedtime: {bedtime}</div>
       )}
+
+      {(data.current_sleep && data.current_sleep !== "0m") || (data.current_awake && data.current_awake !== "0m") ? (
+          <div>
+            {data.current_sleep && data.current_sleep !== "0m" && (
+                <div>Current sleep: {formatDuration(data.current_sleep)}</div>
+            )}
+            {data.current_awake && data.current_awake !== "0m" && (
+                <div>Current awake: {formatDuration(data.current_awake)}</div>
+            )}
+          </div>
+      ) : null}
 
       <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
         <div>Total sleep: {formatDuration(data.total_sleep_duration)}</div>
