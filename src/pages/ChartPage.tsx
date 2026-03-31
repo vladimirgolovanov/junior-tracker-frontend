@@ -245,7 +245,8 @@ export default function ChartPage() {
               >
                 {segments.map((seg, i) => {
                   const startMin = timeToMinutes(seg.start);
-                  const endMin = timeToMinutes(seg.end);
+                  const endMinRaw = timeToMinutes(seg.end);
+                  const endMin = endMinRaw === 0 ? MINUTES_IN_DAY : endMinRaw;
                   const left = (startMin / MINUTES_IN_DAY) * 100;
                   const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
                   return (
@@ -267,12 +268,10 @@ export default function ChartPage() {
           ))}
           <div style={{ display: "flex", marginTop: 4 }}>
             <div style={{ width: 150, flexShrink: 0 }} />
-            <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 12, color: "#666" }}>
-              <span>00:00</span>
-              <span>06:00</span>
-              <span>12:00</span>
-              <span>18:00</span>
-              <span>24:00</span>
+            <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#666" }}>
+              {Array.from({ length: 25 }, (_, i) => (
+                <span key={i}>{i}</span>
+              ))}
             </div>
           </div>
         </div>
