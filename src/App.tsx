@@ -17,7 +17,7 @@ export default function App() {
             <Route path="/events" element={<EventsPage />} />
             <Route path="/chart" element={<ChartPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/events" replace />} />
+          <Route path="*" element={<Navigate to="/chart" replace />} />
         </Route>
       </Routes>
     </BrowserRouter>
