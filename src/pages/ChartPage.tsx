@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import client from "../api/client";
 import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
@@ -61,15 +62,17 @@ function formatDuration(minutes: number | undefined | null): string {
 function DayColumn({ title, data }: { title: string; data: DayData }) {
   const bedtime = data.night_sleeps.find((item) => item.sleep_start)?.sleep_start;
 
+  let numberofsleeps: number = 0;
   return (
     <div style={{ flex: 1, lineHeight: 1.6 }}>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
       {data.day_sleeps.map((item, i) => {
         if (item.sleep_start && item.wake_up && item.sleep_time) {
+          numberofsleeps++
           return (
-            <div key={i}>
-              {item.sleep_start}–{item.wake_up} ({formatDuration(item.sleep_time)})
+            <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE" }}>
+               #{numberofsleeps}  &nbsp; {item.sleep_start}–{item.wake_up} &nbsp; {formatDuration(item.sleep_time)}
             </div>
           );
         }
@@ -77,7 +80,7 @@ function DayColumn({ title, data }: { title: string; data: DayData }) {
           return <div key={i}>Awake {formatDuration(item.awake_time)}</div>;
         }
         if (item.wake_up) {
-          return <div key={i}>Wake up: {item.wake_up}</div>;
+          return <div key={i} style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>Wake up: {item.wake_up}</div>;
         }
         return null;
       })}
@@ -113,26 +116,32 @@ function toDateString(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function getLast15Days(): { dateFrom: string; dateTo: string } {
-  const today = new Date();
+function getLast15Days(anchor?: string): { dateFrom: string; dateTo: string } {
+  const today = anchor ? new Date(anchor) : new Date();
   const from = new Date(today);
   from.setDate(today.getDate() - 14);
   return { dateFrom: toDateString(from), dateTo: toDateString(today) };
 }
 
 export default function ChartPage() {
+  const [searchParams] = useSearchParams();
+  const todayParam = searchParams.get("today") ?? undefined;
+
   const children = useChildren();
   const token = useAuthStore((s) => s.token);
   const [rows, setRows] = useState<ChartRow[]>([]);
   const [error, setError] = useState("");
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const { dateFrom, dateTo } = getLast15Days();
+  const { dateFrom, dateTo } = getLast15Days(todayParam);
 
   const firstChildId = children[0]?.id;
 
   useEffect(() => {
     if (!firstChildId) return;
-    fetch(`/api/chart/dashboard?child_id=${firstChildId}`, {
+    const url = new URL("/api/chart/dashboard", window.location.origin);
+    url.searchParams.set("child_id", String(firstChildId));
+    if (todayParam) url.searchParams.set("today", todayParam);
+    fetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
@@ -140,7 +149,7 @@ export default function ChartPage() {
         if (data && data.today) setDashboard(data as DashboardData);
       })
       .catch(() => {});
-  }, [firstChildId, token]);
+  }, [firstChildId, token, todayParam]);
 
   async function loadChart(childId: number, from: string, to: string) {
     setError("");
@@ -164,7 +173,7 @@ export default function ChartPage() {
   useEffect(() => {
     if (!firstChildId) return;
     loadChart(firstChildId, dateFrom, dateTo);
-  }, [firstChildId]);
+  }, [firstChildId, todayParam]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
