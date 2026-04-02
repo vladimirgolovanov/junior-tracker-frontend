@@ -49,19 +49,11 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
-/** Parse "2h 25m", "35m", "0m" into { h, m } */
-function parseDuration(s: string): { h: number; m: number } {
-  const hMatch = s.match(/(\d+)h/);
-  const mMatch = s.match(/(\d+)m/);
-  return { h: hMatch ? parseInt(hMatch[1]) : 0, m: mMatch ? parseInt(mMatch[1]) : 0 };
-}
-
-function formatDuration(s: string): string {
-  const { h, m } = parseDuration(s);
-  const parts: string[] = [];
-  if (h > 0) parts.push(`${h}h`);
-  if (m > 0) parts.push(`${m}m`);
-  return parts.join(" ") || "0m";
+function formatDuration(minutes: number | undefined | null): string {
+  if (!minutes) return "0m";
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
 }
 
 // --- DayColumn component ---
