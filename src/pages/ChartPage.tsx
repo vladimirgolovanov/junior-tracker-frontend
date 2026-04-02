@@ -15,20 +15,20 @@ interface ChartRow {
 
 interface SleepItem {
   wake_up?: string;
-  awake_time?: string;
-  sleep_time?: string;
+  awake_time?: number;
+  sleep_time?: number;
   sleep_start?: string;
 }
 
 interface DayData {
   day_sleeps: SleepItem[];
   night_sleeps: SleepItem[];
-  total_sleep_duration: string;
-  night_sleep_duration: string;
-  day_sleep_duration: string;
-  total_awake_duration: string;
-  current_sleep?: string;
-  current_awake?: string;
+  total_sleep_duration: number;
+  night_sleep_duration: number;
+  day_sleep_duration: number;
+  total_awake_duration: number;
+  current_sleep?: number;
+  current_awake?: number;
 }
 
 interface DashboardData {
@@ -86,12 +86,12 @@ function DayColumn({ title, data }: { title: string; data: DayData }) {
         <div style={{ marginTop: 4 }}>Bedtime: {bedtime}</div>
       )}
 
-      {(data.current_sleep && data.current_sleep !== "0m") || (data.current_awake && data.current_awake !== "0m") ? (
+      {(data.current_sleep || data.current_awake) ? (
           <div>
-            {data.current_sleep && data.current_sleep !== "0m" && (
+            {!!data.current_sleep && (
                 <div>Current sleep: {formatDuration(data.current_sleep)}</div>
             )}
-            {data.current_awake && data.current_awake !== "0m" && (
+            {!!data.current_awake && (
                 <div>Current awake: {formatDuration(data.current_awake)}</div>
             )}
           </div>
