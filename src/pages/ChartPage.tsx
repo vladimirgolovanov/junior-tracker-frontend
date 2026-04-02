@@ -232,7 +232,7 @@ export default function ChartPage() {
 
       {byDay.size > 0 && (
         <div style={{ marginTop: 16 }}>
-          {[...byDay.entries()].map(([day, segments]) => (
+          {[...byDay.entries()].reverse().map(([day, segments]) => (
             <div key={day} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
               <div style={{ width: 150, flexShrink: 0 }}>{day}</div>
               <div
