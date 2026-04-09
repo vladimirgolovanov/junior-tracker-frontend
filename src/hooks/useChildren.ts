@@ -4,6 +4,7 @@ import { useAuthStore } from "../store/auth";
 interface Child {
   id: number;
   name: string;
+  timezone?: string;
 }
 
 export default function useChildren() {

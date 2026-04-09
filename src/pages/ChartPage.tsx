@@ -50,6 +50,22 @@ function formatTime(iso: string): string {
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
+function getTodayInTz(timezone: string): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: timezone });
+}
+
+function getCurrentMinutesInTz(timezone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(new Date());
+  const hour = parseInt(parts.find((p) => p.type === "hour")!.value);
+  const minute = parseInt(parts.find((p) => p.type === "minute")!.value);
+  return hour * 60 + minute;
+}
+
 function formatDuration(minutes: number | undefined | null): string {
   if (!minutes) return "0m";
   const h = Math.floor(minutes / 60);
@@ -135,6 +151,9 @@ export default function ChartPage() {
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
   const firstChildId = children[0]?.id;
+  const timezone = children[0]?.timezone;
+  const todayInTz = timezone ? getTodayInTz(timezone) : null;
+  const currentMinutes = timezone ? getCurrentMinutesInTz(timezone) : null;
 
   useEffect(() => {
     if (!firstChildId) return;
@@ -205,27 +224,21 @@ export default function ChartPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            Child{" "}
-            <select name="child_id" required>
-              {children.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div>
-          <label>
-            Date From <input name="date_from" type="date" defaultValue={dateFrom} required />
-          </label>
-        </div>
-        <div>
-          <label>
-            Date To <input name="date_to" type="date" defaultValue={dateTo} required />
-          </label>
-        </div>
+      <form onSubmit={handleSubmit} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <label style={{ display: "none" }}>
+          Child{" "}
+          <select name="child_id" required>
+            {children.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Date From <input name="date_from" type="date" defaultValue={dateFrom} required />
+        </label>
+        <label>
+          Date To <input name="date_to" type="date" defaultValue={dateTo} required />
+        </label>
         <button type="submit">Load</button>
       </form>
 
@@ -244,6 +257,19 @@ export default function ChartPage() {
                   position: "relative",
                 }}
               >
+                {day === todayInTz && currentMinutes !== null && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      left: `${(currentMinutes / MINUTES_IN_DAY) * 100}%`,
+                      width: 2,
+                      height: "100%",
+                      background: "black",
+                      pointerEvents: "none",
+                      zIndex: 1,
+                    }}
+                  />
+                )}
                 {segments.map((seg, i) => {
                   const startMin = timeToMinutes(seg.start);
                   const endMinRaw = timeToMinutes(seg.end);
