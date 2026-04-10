@@ -273,7 +273,10 @@ export default function ChartPage() {
                 {segments.map((seg, i) => {
                   const startMin = timeToMinutes(seg.start);
                   const endMinRaw = timeToMinutes(seg.end);
-                  const endMin = endMinRaw === 0 ? MINUTES_IN_DAY : endMinRaw;
+                  let endMin = endMinRaw === 0 ? MINUTES_IN_DAY : endMinRaw;
+                  if (day === todayInTz && currentMinutes !== null && endMin > currentMinutes) {
+                    endMin = currentMinutes;
+                  }
                   const left = (startMin / MINUTES_IN_DAY) * 100;
                   const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
                   return (
