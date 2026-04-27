@@ -3,7 +3,6 @@ import Layout from "./components/Layout";
 import RequireAuth from "./components/RequireAuth";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import EventsPage from "./pages/EventsPage";
 import ChartPage from "./pages/ChartPage";
 
 export default function App() {
@@ -14,7 +13,6 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<RequireAuth />}>
-            <Route path="/events" element={<EventsPage />} />
             <Route path="/chart" element={<ChartPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/chart" replace />} />

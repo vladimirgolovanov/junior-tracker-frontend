@@ -157,17 +157,20 @@ export default function ChartPage() {
 
   useEffect(() => {
     if (!firstChildId) return;
-    const url = new URL("/api/chart/dashboard", window.location.origin);
-    url.searchParams.set("child_id", String(firstChildId));
-    if (todayParam) url.searchParams.set("today", todayParam);
-    fetch(url.toString(), {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data && data.today) setDashboard(data as DashboardData);
-      })
-      .catch(() => {});
+
+    function fetchDashboard() {
+      const url = new URL("/api/chart/dashboard", window.location.origin);
+      url.searchParams.set("child_id", String(firstChildId));
+      if (todayParam) url.searchParams.set("today", todayParam);
+      fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((data) => { if (data?.today) setDashboard(data as DashboardData); })
+        .catch(() => {});
+    }
+
+    fetchDashboard();
+    const id = setInterval(fetchDashboard, 60_000);
+    return () => clearInterval(id);
   }, [firstChildId, token, todayParam]);
 
   async function loadChart(childId: number, from: string, to: string) {
@@ -192,6 +195,8 @@ export default function ChartPage() {
   useEffect(() => {
     if (!firstChildId) return;
     loadChart(firstChildId, dateFrom, dateTo);
+    const id = setInterval(() => loadChart(firstChildId, dateFrom, dateTo), 60_000);
+    return () => clearInterval(id);
   }, [firstChildId, todayParam]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
