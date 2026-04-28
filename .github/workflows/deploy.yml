@@ -44,24 +44,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose and nginx config to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.ID_RSA }}
-          source: "docker-compose-jtf-prod.yml,docker"
-          target: /projects/junior-tracker/frontend
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
 
-      - name: Deploy on server
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.ID_RSA }}
-          script: |
-            docker login ${{ env.REGISTRY }} -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
-            cd /projects/junior-tracker/frontend
-            docker compose --project-name junior_tracker_frontend --file=docker-compose-jtf-prod.yml pull
-            docker compose --project-name junior_tracker_frontend --file=docker-compose-jtf-prod.yml down
-            docker compose --project-name junior_tracker_frontend --file=docker-compose-jtf-prod.yml up -d --remove-orphans
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_BASE64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Deploy
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout restart deployment/junior-tracker-frontend -n junior-tracker
+          kubectl rollout status deployment/junior-tracker-frontend -n junior-tracker --timeout=120s
