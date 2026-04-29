@@ -50,7 +50,7 @@ function timeToMinutes(iso: string): number {
 
 function formatTime(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: false });
 }
 
 function getTodayInTz(timezone: string): string {
@@ -76,6 +76,11 @@ function formatDuration(minutes: number | undefined | null): string {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
+function stripHour(hhmm: string): string {
+  const [h, m] = hhmm.split(":");
+  return `${parseInt(h)}:${m}`;
+}
+
 function timeStrToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
@@ -83,20 +88,18 @@ function timeStrToMinutes(hhmm: string): number {
 
 // --- DayColumn component ---
 
-function DayColumn({ title, data }: { title: string; data: DayData }) {
+function DayColumn({ title, data, live = true }: { title: string; data: DayData; live?: boolean }) {
   const bedtime = data.night_sleeps.find((item) => item.sleep_start)?.sleep_start;
 
-  const awakeFromNightSleep = data.awake_time
-    ? Math.round((Date.now() - new Date(data.awake_time).getTime()) / 60_000)
-    : null;
+  const awakeFromNightSleep = data.awake_time;
 
   let numberofsleeps: number = 0;
   return (
     <div style={{ flex: 1, lineHeight: 1.6 }}>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
-      {awakeFromNightSleep != null && awakeFromNightSleep > 0 && (
-        <div>Awake {formatDuration(awakeFromNightSleep)}</div>
+      {awakeFromNightSleep != null && (
+        <div>Awake: {stripHour(formatTime(awakeFromNightSleep))}</div>
       )}
 
       {data.day_sleeps.map((item, i) => {
@@ -110,7 +113,7 @@ function DayColumn({ title, data }: { title: string; data: DayData }) {
           return (
             <div key={i}>
               <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE" }}>
-                 #{numberofsleeps}  &nbsp; {item.sleep_start}–{item.wake_up} &nbsp; {formatDuration(item.sleep_time)}
+                 #{numberofsleeps}  &nbsp; {stripHour(item.sleep_start)}–{stripHour(item.wake_up)} &nbsp; {formatDuration(item.sleep_time)}
               </div>
               {awakeGap != null && awakeGap > 0 && (
                 <div>Awake {formatDuration(awakeGap)}</div>
@@ -119,16 +122,16 @@ function DayColumn({ title, data }: { title: string; data: DayData }) {
           );
         }
         if (item.wake_up) {
-          return <div key={i} style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>Wake up: {item.wake_up}</div>;
+          return <div key={i} style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>Wake up: {stripHour(item.wake_up)}</div>;
         }
         return null;
       })}
 
       {bedtime && (
-        <div style={{ marginTop: 4 }}>Bedtime: {bedtime}</div>
+        <div style={{ marginTop: 4 }}>Bedtime: {stripHour(bedtime)}</div>
       )}
 
-      {(data.current_sleep || data.current_awake) ? (
+      {live && (data.current_sleep || data.current_awake) ? (
           <div>
             {!!data.current_sleep && (
                 <div>Current sleep: {formatDuration(data.current_sleep)}</div>
@@ -245,13 +248,11 @@ export default function ChartPage() {
 
   return (
     <div>
-      <h1>Chart</h1>
-
       {dashboard && (
         <div style={{ display: "flex", gap: 24, marginBottom: 32 }}>
-          <DayColumn title="Today" data={dashboard.today} />
+          <DayColumn title="Today" data={dashboard.today} live={!todayParam} />
           <DayColumn title="Yesterday" data={dashboard.yesterday} />
-          <DayColumn title="Day before yesterday" data={dashboard.day_before_yesterday} />
+          <DayColumn title="Day before" data={dashboard.day_before_yesterday} />
         </div>
       )}
 
