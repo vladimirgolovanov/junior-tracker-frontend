@@ -16,9 +16,9 @@ interface ChartRow {
 
 interface SleepItem {
   wake_up?: string;
-  awake_time?: number;
   sleep_time?: number;
   sleep_start?: string;
+  is_day_sleep?: boolean;
 }
 
 interface DayData {
@@ -30,6 +30,9 @@ interface DayData {
   total_awake_duration: number;
   current_sleep?: number;
   current_awake?: number;
+  awake_time?: string;
+  cycle_length?: number;
+  night_sleep_end?: string;
 }
 
 interface DashboardData {
@@ -73,27 +76,47 @@ function formatDuration(minutes: number | undefined | null): string {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
+function timeStrToMinutes(hhmm: string): number {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+}
+
 // --- DayColumn component ---
 
 function DayColumn({ title, data }: { title: string; data: DayData }) {
   const bedtime = data.night_sleeps.find((item) => item.sleep_start)?.sleep_start;
+
+  const awakeFromNightSleep = data.awake_time
+    ? Math.round((Date.now() - new Date(data.awake_time).getTime()) / 60_000)
+    : null;
 
   let numberofsleeps: number = 0;
   return (
     <div style={{ flex: 1, lineHeight: 1.6 }}>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
+      {awakeFromNightSleep != null && awakeFromNightSleep > 0 && (
+        <div>Awake {formatDuration(awakeFromNightSleep)}</div>
+      )}
+
       {data.day_sleeps.map((item, i) => {
         if (item.sleep_start && item.wake_up && item.sleep_time) {
-          numberofsleeps++
+          numberofsleeps++;
+          const nextSleep = data.day_sleeps[i + 1];
+          const awakeGap =
+            nextSleep?.sleep_start && item.wake_up
+              ? timeStrToMinutes(nextSleep.sleep_start) - timeStrToMinutes(item.wake_up)
+              : null;
           return (
-            <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE" }}>
-               #{numberofsleeps}  &nbsp; {item.sleep_start}–{item.wake_up} &nbsp; {formatDuration(item.sleep_time)}
+            <div key={i}>
+              <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE" }}>
+                 #{numberofsleeps}  &nbsp; {item.sleep_start}–{item.wake_up} &nbsp; {formatDuration(item.sleep_time)}
+              </div>
+              {awakeGap != null && awakeGap > 0 && (
+                <div>Awake {formatDuration(awakeGap)}</div>
+              )}
             </div>
           );
-        }
-        if (item.awake_time) {
-          return <div key={i}>Awake {formatDuration(item.awake_time)}</div>;
         }
         if (item.wake_up) {
           return <div key={i} style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>Wake up: {item.wake_up}</div>;
@@ -121,6 +144,9 @@ function DayColumn({ title, data }: { title: string; data: DayData }) {
         <div>Night sleep: {formatDuration(data.night_sleep_duration)}</div>
         <div>Day sleep: {formatDuration(data.day_sleep_duration)}</div>
         <div>Awake: {formatDuration(data.total_awake_duration)}</div>
+        {data.cycle_length != null && (
+          <div>Cycle: {formatDuration(data.cycle_length)}</div>
+        )}
       </div>
     </div>
   );
