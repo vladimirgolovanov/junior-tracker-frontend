@@ -99,7 +99,7 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
       {awakeFromNightSleep != null && (
-        <div>Awake: {stripHour(formatTime(awakeFromNightSleep))}</div>
+        <div>Wake up: {stripHour(formatTime(awakeFromNightSleep))}</div>
       )}
 
       {data.day_sleeps.map((item, i) => {
@@ -116,7 +116,7 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
                  #{numberofsleeps}  &nbsp; {stripHour(item.sleep_start)}–{stripHour(item.wake_up)} &nbsp; {formatDuration(item.sleep_time)}
               </div>
               {awakeGap != null && awakeGap > 0 && (
-                <div>Awake {formatDuration(awakeGap)}</div>
+                <div>Awake: {formatDuration(awakeGap)}</div>
               )}
             </div>
           );
