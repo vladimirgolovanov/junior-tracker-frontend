@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import client from "../api/client";
 import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
 
@@ -10,6 +9,24 @@ interface ChartRow {
   day: string;
   start: string;
   end: string;
+}
+
+interface EventType {
+  id: number;
+  name: string;
+  format: string;
+}
+
+interface AdditionalEvent {
+  id: number;
+  event_type_id: number;
+  occurred_at: string;
+  description: string | null;
+}
+
+interface ChartResponse {
+  sleep_data: ChartRow[];
+  additional_data?: Record<string, AdditionalEvent[]>;
 }
 
 // --- Dashboard types ---
@@ -87,6 +104,17 @@ function timeStrToMinutes(hhmm: string): number {
 }
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const PALETTE = ["#e74c3c", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c"];
+const NAME_COLORS: Record<string, string> = {
+  food: "#2ecc71",
+  poo: "#8B4513",
+  formula: "#ff9eb5",
+};
+function colorForEventType(id: number, name: string): string {
+  const key = name.toLowerCase();
+  return NAME_COLORS[key] ?? PALETTE[id % PALETTE.length];
+}
 
 function formatDayLabel(dateStr: string): string {
   const [, month, day] = dateStr.split("-").map(Number);
@@ -189,6 +217,9 @@ export default function ChartPage() {
   const token = useAuthStore((s) => s.token);
   const [rows, setRows] = useState<ChartRow[]>([]);
   const [error, setError] = useState("");
+  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const [selectedAdditionalIds, setSelectedAdditionalIds] = useState<number[]>([]);
+  const [additionalData, setAdditionalData] = useState<Record<string, AdditionalEvent[]>>({});
   const chartRef = useRef<HTMLDivElement>(null);
   const firstBarRef = useRef<HTMLDivElement | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
@@ -218,31 +249,41 @@ export default function ChartPage() {
     return () => clearInterval(id);
   }, [firstChildId, token, todayParam]);
 
-  async function loadChart(childId: number, from: string, to: string) {
+  useEffect(() => {
+    if (!token || !firstChildId) return;
+    const url = new URL("/api/event_types/", window.location.origin);
+    url.searchParams.set("child_id", String(firstChildId));
+    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data: EventType[]) => setEventTypes(data))
+      .catch(() => {});
+  }, [token, firstChildId]);
+
+  async function loadChart(childId: number, from: string, to: string, additionalIds: number[] = []) {
     setError("");
-    const { data, error: err } = await client.GET("/api/chart/", {
-      params: {
-        query: {
-          child_id: childId,
-          date_from: from,
-          date_to: to,
-          event_type_ids: [1, 2],
-        },
-      },
-    });
-    if (err) {
+    const url = new URL("/api/chart/", window.location.origin);
+    url.searchParams.set("child_id", String(childId));
+    url.searchParams.set("date_from", from);
+    url.searchParams.set("date_to", to);
+    [1, 2].forEach((id) => url.searchParams.append("event_type_ids", String(id)));
+    additionalIds.forEach((id) => url.searchParams.append("additional_data_ids", String(id)));
+    try {
+      const r = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) { setError("Failed to load chart data"); return; }
+      const data: ChartResponse = await r.json();
+      setRows(data.sleep_data ?? []);
+      setAdditionalData(data.additional_data ?? {});
+    } catch {
       setError("Failed to load chart data");
-      return;
     }
-    setRows(Array.isArray(data) ? (data as ChartRow[]) : []);
   }
 
   useEffect(() => {
     if (!firstChildId) return;
-    loadChart(firstChildId, dateFrom, dateTo);
-    const id = setInterval(() => loadChart(firstChildId, dateFrom, dateTo), 60_000);
+    loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds);
+    const id = setInterval(() => loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds), 60_000);
     return () => clearInterval(id);
-  }, [firstChildId, todayParam]);
+  }, [firstChildId, todayParam, selectedAdditionalIds]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -251,6 +292,7 @@ export default function ChartPage() {
       Number(fd.get("child_id")),
       fd.get("date_from") as string,
       fd.get("date_to") as string,
+      selectedAdditionalIds,
     );
   }
 
@@ -272,6 +314,7 @@ export default function ChartPage() {
         </div>
       )}
 
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <label style={{ display: "none" }}>
           Child{" "}
@@ -289,6 +332,26 @@ export default function ChartPage() {
         </label>
         <button type="submit">Load</button>
       </form>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {eventTypes
+          .filter((et) => et.format !== "range" && et.format !== "range_end")
+          .map((et) => (
+            <label key={et.id} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={selectedAdditionalIds.includes(et.id)}
+                onChange={(e) => {
+                  setSelectedAdditionalIds((prev) =>
+                    e.target.checked ? [...prev, et.id] : prev.filter((id) => id !== et.id)
+                  );
+                }}
+              />
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: colorForEventType(et.id, et.name) }} />
+              {et.name}
+            </label>
+          ))}
+      </div>
+      </div>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -379,6 +442,34 @@ export default function ChartPage() {
                       }}
                     />
                   );
+                })}
+                {Object.entries(additionalData).flatMap(([typeIdStr, events]) => {
+                  const typeId = Number(typeIdStr);
+                  const etName = eventTypes.find((et) => et.id === typeId)?.name ?? "";
+                  const color = colorForEventType(typeId, etName);
+                  return events
+                    .filter((ev) => ev.occurred_at.startsWith(day))
+                    .map((ev) => {
+                      const minutes = timeToMinutes(ev.occurred_at);
+                      const left = (minutes / MINUTES_IN_DAY) * 100;
+                      return (
+                        <div
+                          key={ev.id}
+                          title={ev.description ?? formatTime(ev.occurred_at)}
+                          style={{
+                            position: "absolute",
+                            left: `${left}%`,
+                            top: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: 6,
+                            height: 6,
+                            borderRadius: "50%",
+                            background: color,
+                            zIndex: 3,
+                          }}
+                        />
+                      );
+                    });
                 })}
               </div>
             </div>
