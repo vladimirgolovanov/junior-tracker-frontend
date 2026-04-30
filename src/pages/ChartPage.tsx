@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import client from "../api/client";
 import useChildren from "../hooks/useChildren";
@@ -84,6 +84,19 @@ function stripHour(hhmm: string): string {
 function timeStrToMinutes(hhmm: string): number {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
+}
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatDayLabel(dateStr: string): string {
+  const [, month, day] = dateStr.split("-").map(Number);
+  return `${day} ${MONTH_NAMES[month - 1]}`;
+}
+
+function minutesToTimeLabel(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}:${String(m).padStart(2, "0")}`;
 }
 
 // --- DayColumn component ---
@@ -176,6 +189,9 @@ export default function ChartPage() {
   const token = useAuthStore((s) => s.token);
   const [rows, setRows] = useState<ChartRow[]>([]);
   const [error, setError] = useState("");
+  const chartRef = useRef<HTMLDivElement>(null);
+  const firstBarRef = useRef<HTMLDivElement>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
@@ -277,31 +293,62 @@ export default function ChartPage() {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {byDay.size > 0 && (
-        <div style={{ marginTop: 16 }}>
-          {[...byDay.entries()].reverse().map(([day, segments]) => (
+        <div
+          ref={chartRef}
+          style={{ marginTop: 16, position: "relative" }}
+          onMouseMove={(e) => {
+            const rect = chartRef.current!.getBoundingClientRect();
+            setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+          }}
+          onMouseLeave={() => setHoverPos(null)}
+        >
+          {[...byDay.entries()].reverse().map(([day, segments], index) => (
             <div key={day} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
-              <div style={{ width: 150, flexShrink: 0 }}>{day}</div>
+              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap" }}>{formatDayLabel(day)}</div>
               <div
+                ref={(el) => { if (index === 0 && el) firstBarRef.current = el; }}
                 style={{
                   flex: 1,
                   height: 20,
                   background: "#eee",
                   position: "relative",
+                  overflow: "hidden",
                 }}
               >
-                {day === todayInTz && currentMinutes !== null && (
-                  <div
-                    style={{
-                      position: "absolute",
-                      left: `${(currentMinutes / MINUTES_IN_DAY) * 100}%`,
-                      width: 2,
-                      height: "100%",
-                      background: "black",
-                      pointerEvents: "none",
-                      zIndex: 1,
-                    }}
-                  />
-                )}
+                {day === todayInTz && currentMinutes !== null && (() => {
+                  const lineLeft = (currentMinutes / MINUTES_IN_DAY) * 100;
+                  return (
+                    <>
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: `${lineLeft}%`,
+                          width: 2,
+                          height: "100%",
+                          background: "black",
+                          pointerEvents: "none",
+                          zIndex: 1,
+                        }}
+                      />
+                      <span
+                        style={{
+                          position: "absolute",
+                          left: `calc(${lineLeft}% + 4px)`,
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          fontSize: 8,
+                          lineHeight: 1,
+                          color: "black",
+                          zIndex: 2,
+                          pointerEvents: "none",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {minutesToTimeLabel(currentMinutes)}
+                      </span>
+                    </>
+                  );
+                })()}
                 {segments.map((seg, i) => {
                   const startMin = timeToMinutes(seg.start);
                   const endMinRaw = timeToMinutes(seg.end);
@@ -329,13 +376,54 @@ export default function ChartPage() {
             </div>
           ))}
           <div style={{ display: "flex", marginTop: 4 }}>
-            <div style={{ width: 150, flexShrink: 0 }} />
+            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden" }}>30 Apr</div>
             <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#666" }}>
               {Array.from({ length: 25 }, (_, i) => (
                 <span key={i}>{i}</span>
               ))}
             </div>
           </div>
+          {hoverPos && firstBarRef.current && chartRef.current && (() => {
+            const chartRect = chartRef.current!.getBoundingClientRect();
+            const barRect = firstBarRef.current!.getBoundingClientRect();
+            const barLeft = barRect.left - chartRect.left;
+            const barWidth = barRect.width;
+            const xInBar = hoverPos.x - barLeft;
+            if (xInBar < 0 || xInBar > barWidth) return null;
+            const minutes = Math.round((xInBar / barWidth) * MINUTES_IN_DAY);
+            return (
+              <>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: hoverPos.x,
+                    top: 0,
+                    width: 1,
+                    height: "100%",
+                    background: "rgba(0,0,0,0.5)",
+                    pointerEvents: "none",
+                    zIndex: 10,
+                  }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    left: hoverPos.x + 4,
+                    top: hoverPos.y,
+                    transform: "translateY(-50%)",
+                    fontSize: 8,
+                    lineHeight: 1,
+                    color: "black",
+                    zIndex: 11,
+                    pointerEvents: "none",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {minutesToTimeLabel(minutes)}
+                </span>
+              </>
+            );
+          })()}
         </div>
       )}
     </div>
