@@ -1,26 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuthStore } from "../store/auth";
-
-interface Child {
-  id: number;
-  name: string;
-  timezone?: string;
-}
+import { useChildrenStore } from "../store/children";
 
 export default function useChildren() {
-  const [children, setChildren] = useState<Child[]>([]);
   const token = useAuthStore((s) => s.token);
+  const children = useChildrenStore((s) => s.children);
+  const load = useChildrenStore((s) => s.load);
 
   useEffect(() => {
-    fetch("/api/children/", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setChildren(data);
-      })
-      .catch(() => {});
-  }, [token]);
+    if (token) load(token);
+  }, [token, load]);
 
   return children;
 }

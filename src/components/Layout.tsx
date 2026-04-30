@@ -105,13 +105,13 @@ export default function Layout() {
             inset: 0,
             background: "rgba(0,0,0,0.5)",
             display: "flex",
-            alignItems: "center",
+            alignItems: "flex-start",
             justifyContent: "center",
             zIndex: 100,
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
         >
-          <div style={{ background: "#fff", padding: 24, minWidth: 320, maxWidth: 440, width: "90%" }}>
+          <div style={{ background: "#fff", padding: 24, minWidth: 320, maxWidth: 440, width: "90%", marginTop: "env(safe-area-inset-top, 0px)" }}>
             <h2 style={{ margin: "0 0 16px" }}>Add event</h2>
             <form onSubmit={handleAddEvent} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <input type="hidden" name="child_id" value={firstChildId ?? ""} />
