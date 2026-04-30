@@ -17,3 +17,33 @@ th, td {
   padding: 4px 8px;
   text-align: left;
 }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.dashboard-columns {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.dashboard-col {
+  flex: 1;
+  line-height: 1.6;
+}
+
+@media (max-width: 768px) {
+  .dashboard-columns {
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dashboard-col {
+    min-width: calc(100vw - 32px);
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+}

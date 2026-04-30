@@ -18,7 +18,8 @@ export default function Layout() {
       <nav>
         {token ? (
           <>
-            <Link to="/chart">Chart</Link> |{" "}
+            Junior tracker
+{/*            <Link to="/chart">Chart</Link> |{" "}*/}
             <button type="button" onClick={handleLogout}>
               Logout
             </button>
