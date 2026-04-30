@@ -392,10 +392,19 @@ export default function ChartPage() {
           onMouseLeave={() => setHoverPos(null)}
         >
           <div style={{ display: "flex", marginBottom: 4 }}>
-            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden" }}>30 Apr</div>
-            <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
-              {Array.from({ length: 25 }, (_, i) => (
-                <span key={i}>{i}</span>
+            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden", fontSize: 9 }}>30 Apr</div>
+            <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "#bbb" }}>
+              {Array.from({ length: 24 }, (_, i) => (
+                <span
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: `${(i / 24) * 100}%`,
+                    transform: i === 0 ? "none" : "translateX(-50%)",
+                  }}
+                >
+                  {i}
+                </span>
               ))}
             </div>
           </div>
@@ -501,10 +510,19 @@ export default function ChartPage() {
             </div>
           ))}
           <div style={{ display: "flex", marginTop: 4 }}>
-            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden" }}>30 Apr</div>
-            <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
-              {Array.from({ length: 25 }, (_, i) => (
-                <span key={i}>{i}</span>
+            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden", fontSize: 9 }}>30 Apr</div>
+            <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "#bbb" }}>
+              {Array.from({ length: 24 }, (_, i) => (
+                <span
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left: `${(i / 24) * 100}%`,
+                    transform: i === 0 ? "none" : "translateX(-50%)",
+                  }}
+                >
+                  {i}
+                </span>
               ))}
             </div>
           </div>
