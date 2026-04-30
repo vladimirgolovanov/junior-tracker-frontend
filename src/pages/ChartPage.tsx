@@ -282,10 +282,10 @@ export default function ChartPage() {
           </select>
         </label>
         <label>
-          Date From <input name="date_from" type="date" defaultValue={dateFrom} required />
+          Date from <input name="date_from" type="date" defaultValue={dateFrom} required />
         </label>
         <label>
-          Date To <input name="date_to" type="date" defaultValue={dateTo} required />
+          Date to <input name="date_to" type="date" defaultValue={dateTo} required />
         </label>
         <button type="submit">Load</button>
       </form>
@@ -302,9 +302,17 @@ export default function ChartPage() {
           }}
           onMouseLeave={() => setHoverPos(null)}
         >
+          <div style={{ display: "flex", marginBottom: 4 }}>
+            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden" }}>30 Apr</div>
+            <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
+              {Array.from({ length: 25 }, (_, i) => (
+                <span key={i}>{i}</span>
+              ))}
+            </div>
+          </div>
           {[...byDay.entries()].reverse().map(([day, segments], index) => (
             <div key={day} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
-              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap" }}>{formatDayLabel(day)}</div>
+              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", fontSize: 9, color: "#bbb" }}>{formatDayLabel(day)}</div>
               <div
                 ref={(el) => { if (index === 0 && el) firstBarRef.current = el; }}
                 style={{
@@ -377,7 +385,7 @@ export default function ChartPage() {
           ))}
           <div style={{ display: "flex", marginTop: 4 }}>
             <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden" }}>30 Apr</div>
-            <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#666" }}>
+            <div style={{ flex: 1, display: "flex", justifyContent: "space-between", fontSize: 9, color: "#bbb" }}>
               {Array.from({ length: 25 }, (_, i) => (
                 <span key={i}>{i}</span>
               ))}
