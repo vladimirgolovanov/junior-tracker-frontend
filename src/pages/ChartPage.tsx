@@ -190,7 +190,7 @@ export default function ChartPage() {
   const [rows, setRows] = useState<ChartRow[]>([]);
   const [error, setError] = useState("");
   const chartRef = useRef<HTMLDivElement>(null);
-  const firstBarRef = useRef<HTMLDivElement>(null);
+  const firstBarRef = useRef<HTMLDivElement | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const { dateFrom, dateTo } = getLast15Days(todayParam);
