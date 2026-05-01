@@ -173,8 +173,10 @@ function DayColumn({ title, data, live = true, currentMinutes }: { title: string
           if (j === 0) {
             // most recent sleep: gap up to bedtime or current sleep start
             if (bedtime) return timeStrToMinutes(bedtime) - timeStrToMinutes(item.wake_up);
-            if (live && data.current_sleep != null && currentMinutes != null)
-              return (currentMinutes - data.current_sleep) - timeStrToMinutes(item.wake_up);
+            if (live && data.current_sleep != null && currentMinutes != null) {
+              const sleepStart = (currentMinutes - data.current_sleep + 1440) % 1440;
+              return sleepStart - timeStrToMinutes(item.wake_up);
+            }
             return null;
           }
           // gap up to the sleep rendered above (reversed[j-1])
