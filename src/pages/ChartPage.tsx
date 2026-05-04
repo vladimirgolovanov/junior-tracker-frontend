@@ -133,60 +133,40 @@ function DayColumn({ title, data, live = true, currentMinutes }: { title: string
   const bedtime = data.night_sleeps.find((item) => item.sleep_start)?.sleep_start;
   const awakeFromNightSleep = data.awake_time;
 
-  // Pre-compute sleep numbers in original order
   const sleepNumbers = new Map<number, number>();
   let count = 0;
   data.day_sleeps.forEach((s, i) => {
     if (s.sleep_start && s.wake_up && s.sleep_time) sleepNumbers.set(i, ++count);
   });
 
-  const reversed = [...data.day_sleeps].reverse();
+  const sleeps = data.day_sleeps;
+  const wakeUpFormatted = awakeFromNightSleep != null ? stripHour(formatTime(awakeFromNightSleep)) : null;
 
   return (
     <div>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
-      {live && (!!data.current_sleep || !!data.current_awake) && (
-        <div>
-          {!!data.current_sleep && (
-            <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#555", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
-              Current sleep: {formatDuration(data.current_sleep)}
-            </div>
-          )}
-          {!!data.current_awake && (
-            <div>Current awake: {formatDuration(data.current_awake)}</div>
-          )}
+      {wakeUpFormatted != null && (
+        <div style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>
+          Wake up: {wakeUpFormatted}
         </div>
       )}
 
-      {bedtime && (
-        <div style={{ marginTop: 4 }}>Bedtime: {stripHour(bedtime)}</div>
-      )}
-
-      {reversed.map((item, j) => {
-        const originalIndex = reversed.length - 1 - j;
-
-        // awakeGap = gap between this item's wake_up and the event above it
+      {sleeps.map((item, j) => {
+        // awakeGap = gap between previous event's end and this sleep's start
         const awakeGap = (() => {
-          if (!item.wake_up) return null;
+          if (!item.sleep_start) return null;
           if (j === 0) {
-            // most recent sleep: gap up to bedtime or current sleep start
-            if (bedtime) return timeStrToMinutes(bedtime) - timeStrToMinutes(item.wake_up);
-            if (live && !!data.current_sleep && currentMinutes != null) {
-              const sleepStart = (currentMinutes - data.current_sleep + 1440) % 1440;
-              return sleepStart - timeStrToMinutes(item.wake_up);
-            }
+            if (wakeUpFormatted) return timeStrToMinutes(item.sleep_start) - timeStrToMinutes(wakeUpFormatted);
             return null;
           }
-          // gap up to the sleep rendered above (reversed[j-1])
-          const above = reversed[j - 1];
-          if (above?.sleep_start) return timeStrToMinutes(above.sleep_start) - timeStrToMinutes(item.wake_up);
+          const prev = sleeps[j - 1];
+          if (prev?.wake_up) return timeStrToMinutes(item.sleep_start) - timeStrToMinutes(prev.wake_up);
           return null;
         })();
 
         if (item.sleep_start && item.wake_up && item.sleep_time) {
-          const num = sleepNumbers.get(originalIndex);
+          const num = sleepNumbers.get(j);
           return (
             <div key={j}>
               {awakeGap != null && awakeGap > 0 && <div>Awake: {formatDuration(awakeGap)}</div>}
@@ -207,23 +187,35 @@ function DayColumn({ title, data, live = true, currentMinutes }: { title: string
         return null;
       })}
 
-      {awakeFromNightSleep != null && (() => {
-        const wakeUpFormatted = stripHour(formatTime(awakeFromNightSleep));
-        const firstSleep = reversed[reversed.length - 1];
-        const awakeBeforeFirst = firstSleep?.sleep_start
-          ? timeStrToMinutes(firstSleep.sleep_start) - timeStrToMinutes(wakeUpFormatted)
-          : null;
-        return (
-          <>
-            {awakeBeforeFirst != null && awakeBeforeFirst > 0 && (
-              <div>Awake: {formatDuration(awakeBeforeFirst)}</div>
-            )}
-            <div style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>
-              Wake up: {wakeUpFormatted}
-            </div>
-          </>
-        );
+      {sleeps.length > 0 && (() => {
+        const lastSleep = sleeps[sleeps.length - 1];
+        if (!lastSleep?.wake_up) return null;
+        let gap: number | null = null;
+        if (bedtime) gap = timeStrToMinutes(bedtime) - timeStrToMinutes(lastSleep.wake_up);
+        else if (live && !!data.current_sleep && currentMinutes != null) {
+          const sleepStart = (currentMinutes - data.current_sleep + 1440) % 1440;
+          gap = sleepStart - timeStrToMinutes(lastSleep.wake_up);
+        }
+        return gap != null && gap > 0 ? <div>Awake: {formatDuration(gap)}</div> : null;
       })()}
+
+      {live && (!!data.current_sleep || !!data.current_awake) && (
+        <div>
+          {!!data.current_sleep && (
+            <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#555", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
+              Current sleep: {formatDuration(data.current_sleep)}
+            </div>
+          )}
+          {!!data.current_awake && (
+            <div>Current awake: {formatDuration(data.current_awake)}</div>
+          )}
+        </div>
+      )}
+
+      {bedtime && (
+        <div style={{ marginTop: 4 }}>Bedtime: {stripHour(bedtime)}</div>
+      )}
 
       <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
         <div>Total sleep: {formatDuration(data.total_sleep_duration)}</div>
