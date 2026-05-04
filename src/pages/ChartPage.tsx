@@ -173,7 +173,7 @@ function DayColumn({ title, data, live = true, currentMinutes }: { title: string
           if (j === 0) {
             // most recent sleep: gap up to bedtime or current sleep start
             if (bedtime) return timeStrToMinutes(bedtime) - timeStrToMinutes(item.wake_up);
-            if (live && data.current_sleep != null && currentMinutes != null) {
+            if (live && !!data.current_sleep && currentMinutes != null) {
               const sleepStart = (currentMinutes - data.current_sleep + 1440) % 1440;
               return sleepStart - timeStrToMinutes(item.wake_up);
             }
@@ -207,9 +207,23 @@ function DayColumn({ title, data, live = true, currentMinutes }: { title: string
         return null;
       })}
 
-      {awakeFromNightSleep != null && (
-        <div>Wake up: {stripHour(formatTime(awakeFromNightSleep))}</div>
-      )}
+      {awakeFromNightSleep != null && (() => {
+        const wakeUpFormatted = stripHour(formatTime(awakeFromNightSleep));
+        const firstSleep = reversed[reversed.length - 1];
+        const awakeBeforeFirst = firstSleep?.sleep_start
+          ? timeStrToMinutes(firstSleep.sleep_start) - timeStrToMinutes(wakeUpFormatted)
+          : null;
+        return (
+          <>
+            {awakeBeforeFirst != null && awakeBeforeFirst > 0 && (
+              <div>Awake: {formatDuration(awakeBeforeFirst)}</div>
+            )}
+            <div style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>
+              Wake up: {wakeUpFormatted}
+            </div>
+          </>
+        );
+      })()}
 
       <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
         <div>Total sleep: {formatDuration(data.total_sleep_duration)}</div>
