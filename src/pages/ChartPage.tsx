@@ -31,25 +31,28 @@ interface ChartResponse {
 
 // --- Dashboard types ---
 
-interface SleepItem {
-  wake_up?: string;
-  sleep_time?: number;
-  sleep_start?: string;
-  is_day_sleep?: boolean;
+interface Segment {
+  time: number;
+  start_dt: string;
+  end_dt: string;
+  segment_type: "day_awake" | "day_sleep" | "night_sleep" | "night_awake";
+  is_current?: boolean;
 }
 
 interface DayData {
-  day_sleeps: SleepItem[];
-  night_sleeps: SleepItem[];
+  segments: Segment[];
+  bedtime: string;
+  current_sleep: number;
+  current_awake: number;
   total_sleep_duration: number;
   night_sleep_duration: number;
   day_sleep_duration: number;
   total_awake_duration: number;
-  current_sleep?: number;
-  current_awake?: number;
-  awake_time?: string;
-  cycle_length?: number;
-  night_sleep_end?: string;
+  day_awake_duration: number;
+  night_awake_duration: number;
+  night_sleep_end: string;
+  awake_time: string;
+  cycle_length: number;
 }
 
 interface DashboardData {
@@ -93,15 +96,7 @@ function formatDuration(minutes: number | undefined | null): string {
   return h ? `${h}h ${m}m` : `${m}m`;
 }
 
-function stripHour(hhmm: string): string {
-  const [h, m] = hhmm.split(":");
-  return `${parseInt(h)}:${m}`;
-}
 
-function timeStrToMinutes(hhmm: string): number {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-}
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -129,75 +124,20 @@ function minutesToTimeLabel(minutes: number): string {
 
 // --- DayColumn component ---
 
-function DayColumn({ title, data, live = true, currentMinutes }: { title: string; data: DayData; live?: boolean; currentMinutes?: number | null }) {
-  const bedtime = data.night_sleeps.find((item) => item.sleep_start)?.sleep_start;
-  const awakeFromNightSleep = data.awake_time;
-
-  const sleepNumbers = new Map<number, number>();
-  let count = 0;
-  data.day_sleeps.forEach((s, i) => {
-    if (s.sleep_start && s.wake_up && s.sleep_time) sleepNumbers.set(i, ++count);
-  });
-
-  const sleeps = data.day_sleeps;
-  const wakeUpFormatted = awakeFromNightSleep != null ? stripHour(formatTime(awakeFromNightSleep)) : null;
+function DayColumn({ title, data, live = true }: { title: string; data: DayData; live?: boolean }) {
+  const wakeUpFormatted = data.awake_time ? formatTime(data.awake_time) : null;
+  const reversedSegments = [...data.segments].reverse();
+  let daySleepCount = data.segments.filter((s) => s.segment_type === "day_sleep").length;
 
   return (
     <div>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
-      {wakeUpFormatted != null && (
+      {data.bedtime && (
         <div style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>
-          Wake up: {wakeUpFormatted}
+          Bedtime: {formatTime(data.bedtime)}
         </div>
       )}
-
-      {sleeps.map((item, j) => {
-        // awakeGap = gap between previous event's end and this sleep's start
-        const awakeGap = (() => {
-          if (!item.sleep_start) return null;
-          if (j === 0) {
-            if (wakeUpFormatted) return timeStrToMinutes(item.sleep_start) - timeStrToMinutes(wakeUpFormatted);
-            return null;
-          }
-          const prev = sleeps[j - 1];
-          if (prev?.wake_up) return timeStrToMinutes(item.sleep_start) - timeStrToMinutes(prev.wake_up);
-          return null;
-        })();
-
-        if (item.sleep_start && item.wake_up && item.sleep_time) {
-          const num = sleepNumbers.get(j);
-          return (
-            <div key={j}>
-              {awakeGap != null && awakeGap > 0 && <div>Awake: {formatDuration(awakeGap)}</div>}
-              <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE" }}>
-                #{num} &nbsp; {stripHour(item.sleep_start)}–{stripHour(item.wake_up)} &nbsp; {formatDuration(item.sleep_time)}
-              </div>
-            </div>
-          );
-        }
-        if (item.wake_up) {
-          return (
-            <div key={j}>
-              {awakeGap != null && awakeGap > 0 && <div>Awake: {formatDuration(awakeGap)}</div>}
-              <div style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>Wake up: {stripHour(item.wake_up)}</div>
-            </div>
-          );
-        }
-        return null;
-      })}
-
-      {sleeps.length > 0 && (() => {
-        const lastSleep = sleeps[sleeps.length - 1];
-        if (!lastSleep?.wake_up) return null;
-        let gap: number | null = null;
-        if (bedtime) gap = timeStrToMinutes(bedtime) - timeStrToMinutes(lastSleep.wake_up);
-        else if (live && !!data.current_sleep && currentMinutes != null) {
-          const sleepStart = (currentMinutes - data.current_sleep + 1440) % 1440;
-          gap = sleepStart - timeStrToMinutes(lastSleep.wake_up);
-        }
-        return gap != null && gap > 0 ? <div>Awake: {formatDuration(gap)}</div> : null;
-      })()}
 
       {live && (!!data.current_sleep || !!data.current_awake) && (
         <div>
@@ -213,8 +153,25 @@ function DayColumn({ title, data, live = true, currentMinutes }: { title: string
         </div>
       )}
 
-      {bedtime && (
-        <div style={{ marginTop: 4 }}>Bedtime: {stripHour(bedtime)}</div>
+      {reversedSegments.map((seg, i) => {
+        if (seg.segment_type === "day_awake") {
+          return <div key={i}>Awake: {formatDuration(seg.time)}</div>;
+        }
+        if (seg.segment_type === "day_sleep") {
+          const num = daySleepCount--;
+          return (
+            <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE" }}>
+              #{num} &nbsp; {formatTime(seg.start_dt)}–{formatTime(seg.end_dt)} &nbsp; {formatDuration(seg.time)}
+            </div>
+          );
+        }
+        return null;
+      })}
+
+      {wakeUpFormatted != null && (
+        <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
+          Wake up: {wakeUpFormatted}
+        </div>
       )}
 
       <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
@@ -342,7 +299,7 @@ export default function ChartPage() {
     <div>
       {dashboard && (
         <div className="dashboard-columns">
-          <div className="dashboard-col"><DayColumn title="Today" data={dashboard.today} live={!todayParam} currentMinutes={currentMinutes} /></div>
+          <div className="dashboard-col"><DayColumn title="Today" data={dashboard.today} live={!todayParam} /></div>
           <div className="dashboard-col"><DayColumn title="Yesterday" data={dashboard.yesterday} /></div>
           <div className="dashboard-col"><DayColumn title="Day before" data={dashboard.day_before_yesterday} /></div>
         </div>
