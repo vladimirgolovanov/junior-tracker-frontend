@@ -178,11 +178,9 @@ export default function Layout() {
           onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
         >
           <div style={{ background: "#fff", padding: 24, minWidth: 320, maxWidth: 440, width: "90%", marginTop: "env(safe-area-inset-top, 0px)" }}>
-            <h2 style={{ margin: "0 0 16px" }}>Add event</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <span>Event type</span>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {filteredTypes.map((et) => (
                     <label key={et.id} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
@@ -200,7 +198,6 @@ export default function Layout() {
               </div>
 
               <div>
-                <div style={{ marginBottom: 4 }}>Time</div>
                 <Picker
                   value={pickerValue}
                   onChange={(v) => setPickerValue(v as typeof pickerValue)}
