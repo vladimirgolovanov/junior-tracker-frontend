@@ -4,6 +4,9 @@ WORKDIR /app
 
 COPY . /app/
 
+ARG VITE_SENTRY_DSN
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+
 RUN npm install --progress=false
 RUN npm run build
 

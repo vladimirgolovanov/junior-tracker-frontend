@@ -34,6 +34,8 @@ jobs:
           file: ./Dockerfile-prod
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          build-args: |
+            VITE_SENTRY_DSN=${{ secrets.VITE_SENTRY_DSN }}
 
   deploy:
     name: Deploy
