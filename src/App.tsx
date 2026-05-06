@@ -4,6 +4,8 @@ import RequireAuth from "./components/RequireAuth";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ChartPage from "./pages/ChartPage";
+import AddEventPage from "./pages/AddEventPage";
+import ChildSettingsPage from "./pages/ChildSettingsPage";
 
 export default function App() {
   return (
@@ -14,6 +16,8 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route element={<RequireAuth />}>
             <Route path="/chart" element={<ChartPage />} />
+            <Route path="/add-event" element={<AddEventPage />} />
+            <Route path="/child-settings" element={<ChildSettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/chart" replace />} />
         </Route>
