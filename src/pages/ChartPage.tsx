@@ -96,15 +96,8 @@ function formatDuration(minutes: number | undefined | null): string {
 
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const PALETTE = ["#e74c3c", "#2ecc71", "#f39c12", "#9b59b6", "#1abc9c"];
-const NAME_COLORS: Record<string, string> = {
-  food: "#2ecc71",
-  poo: "#8B4513",
-  formula: "#ff9eb5",
-};
-function colorForEventType(id: number, name: string): string {
-  const key = name.toLowerCase();
-  return NAME_COLORS[key] ?? PALETTE[id % PALETTE.length];
+function colorForEventType(color: string | null): string {
+  return color ? `#${color}` : "#000";
 }
 
 function formatDayLabel(dateStr: string): string {
@@ -329,7 +322,7 @@ export default function ChartPage() {
                   );
                 }}
               />
-              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: colorForEventType(et.id, et.name) }} />
+              <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: colorForEventType(et.color) }} />
               {et.name}
             </label>
           ))}
@@ -437,8 +430,8 @@ export default function ChartPage() {
                 })}
                 {Object.entries(additionalData).flatMap(([typeIdStr, events]) => {
                   const typeId = Number(typeIdStr);
-                  const etName = eventTypes.find((et) => et.id === typeId)?.name ?? "";
-                  const color = colorForEventType(typeId, etName);
+                  const etColor = eventTypes.find((et) => et.id === typeId)?.color ?? null;
+                  const color = colorForEventType(etColor);
                   return events
                     .filter((ev) => ev.occurred_at.startsWith(day))
                     .map((ev) => {

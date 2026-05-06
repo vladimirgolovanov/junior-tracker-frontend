@@ -4,6 +4,11 @@ export interface EventType {
   id: number;
   name: string;
   format: string;
+  color: string | null;
+  parent_id: number | null;
+  show_in_filters: boolean;
+  volume_input: boolean;
+  describe_input: boolean;
 }
 
 const CACHE_KEY = "event_types_cache";
