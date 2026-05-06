@@ -15,6 +15,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem("token");
     import("./children").then(({ useChildrenStore }) => useChildrenStore.getState().reset());
+    import("./eventTypes").then(({ useEventTypesStore }) => useEventTypesStore.getState().reset());
     set({ token: null });
   },
 }));

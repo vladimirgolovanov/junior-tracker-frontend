@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
+import { useEventTypesStore } from "../store/eventTypes";
 
 // --- Chart types ---
 
@@ -11,11 +12,6 @@ interface ChartRow {
   end: string;
 }
 
-interface EventType {
-  id: number;
-  name: string;
-  format: string;
-}
 
 interface AdditionalEvent {
   id: number;
@@ -208,7 +204,8 @@ export default function ChartPage() {
   const token = useAuthStore((s) => s.token);
   const [rows, setRows] = useState<ChartRow[]>([]);
   const [error, setError] = useState("");
-  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
+  const eventTypes = useEventTypesStore((s) => s.eventTypes);
+  const loadEventTypes = useEventTypesStore((s) => s.load);
   const [selectedAdditionalIds, setSelectedAdditionalIds] = useState<number[]>([]);
   const [additionalData, setAdditionalData] = useState<Record<string, AdditionalEvent[]>>({});
   const chartRef = useRef<HTMLDivElement>(null);
@@ -242,13 +239,8 @@ export default function ChartPage() {
 
   useEffect(() => {
     if (!token || !firstChildId) return;
-    const url = new URL("/api/event_types/", window.location.origin);
-    url.searchParams.set("child_id", String(firstChildId));
-    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then((data: EventType[]) => setEventTypes(data))
-      .catch(() => {});
-  }, [token, firstChildId]);
+    loadEventTypes(token, firstChildId);
+  }, [token, firstChildId, loadEventTypes]);
 
   async function loadChart(childId: number, from: string, to: string, additionalIds: number[] = []) {
     setError("");

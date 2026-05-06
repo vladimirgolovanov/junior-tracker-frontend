@@ -3,12 +3,7 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 import client from "../api/client";
 import useChildren from "../hooks/useChildren";
-
-interface EventType {
-  id: number;
-  name: string;
-  format: string;
-}
+import { useEventTypesStore } from "../store/eventTypes";
 
 function getNowLocal(): string {
   const d = new Date();
@@ -23,21 +18,17 @@ export default function Layout() {
   const navigate = useNavigate();
   const children = useChildren();
   const [showModal, setShowModal] = useState(false);
-  const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
   const firstChildId = children[0]?.id;
+  const eventTypes = useEventTypesStore((s) => s.eventTypes);
+  const loadEventTypes = useEventTypesStore((s) => s.load);
 
   useEffect(() => {
-    if (!showModal || !firstChildId) return;
-    const url = new URL("/api/event_types/", window.location.origin);
-    url.searchParams.set("child_id", String(firstChildId));
-    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
-      .then((r) => r.json())
-      .then((data: EventType[]) => setEventTypes(data))
-      .catch(() => {});
-  }, [showModal, firstChildId, token]);
+    if (!token || !firstChildId) return;
+    loadEventTypes(token, firstChildId);
+  }, [token, firstChildId, loadEventTypes]);
 
   async function handleLogout() {
     await client.POST("/auth/logout");
