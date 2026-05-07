@@ -318,7 +318,7 @@ export default function ChildSettingsPage() {
                       <input
                         value={edit.color}
                         onChange={(e) => updateRow(et.id, "color", e.target.value)}
-                        placeholder="#rrggbb"
+                        placeholder="rrggbb"
                         style={{ width: 80 }}
                       />
                     </td>
@@ -380,7 +380,7 @@ export default function ChildSettingsPage() {
             <input
               value={newColor}
               onChange={(e) => setNewColor(e.target.value)}
-              placeholder="#rrggbb"
+              placeholder="rrggbb"
               style={{ display: "block", width: "100%", marginTop: 4 }}
             />
           </label>
