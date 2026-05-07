@@ -1,0 +1,11 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: mcp-sse
+  namespace: junior-tracker
+spec:
+  headers:
+    customResponseHeaders:
+      X-Accel-Buffering: "no"
+    customRequestHeaders:
+      Connection: "keep-alive"
