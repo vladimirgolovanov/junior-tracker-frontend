@@ -10,6 +10,7 @@ i18n.use(initReactI18next).init({
         "nav.appName": "Junior tracker",
         "nav.chart": "Chart",
         "nav.addEvent": "Add event",
+        "nav.stats": "Stats",
         "nav.settings": "Settings",
         "nav.logout": "Logout",
         "nav.login": "Login",
@@ -56,6 +57,12 @@ i18n.use(initReactI18next).init({
         "chart.dateTo": "Date to",
         "chart.load": "Load",
         "chart.loadFailed": "Failed to load chart data",
+
+        "stats.title": "Statistics",
+        "stats.cycleLength": "Cycle (sleep + awake)",
+        "stats.daySleep": "Day sleep",
+        "stats.nightSleep": "Night sleep",
+        "stats.totalAwake": "Awake",
 
         "settings.loading": "Loading...",
         "settings.title": "Settings",

@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import ChartPage from "./pages/ChartPage";
 import AddEventPage from "./pages/AddEventPage";
 import ChildSettingsPage from "./pages/ChildSettingsPage";
+import StatsPage from "./pages/StatsPage";
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
             <Route path="/chart" element={<ChartPage />} />
             <Route path="/add-event" element={<AddEventPage />} />
             <Route path="/child-settings" element={<ChildSettingsPage />} />
+            <Route path="/stats" element={<StatsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/chart" replace />} />
         </Route>

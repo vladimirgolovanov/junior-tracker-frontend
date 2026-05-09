@@ -30,6 +30,9 @@ export default function Layout() {
               <button type="button" onClick={() => navigate("/add-event")}>
                 {t("nav.addEvent")}
               </button>
+              <button type="button" onClick={() => navigate("/stats")}>
+                {t("nav.stats")}
+              </button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button type="button" onClick={() => navigate("/child-settings")}>
