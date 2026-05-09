@@ -1,8 +1,10 @@
 import { FormEvent, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import client from "../api/client";
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [error, setError] = useState("");
 
@@ -23,7 +25,7 @@ export default function RegisterPage() {
 
     if (err) {
       const detail = err.detail;
-      setError(typeof detail === "string" ? detail : "Registration failed");
+      setError(typeof detail === "string" ? detail : t("register.failed"));
       return;
     }
 
@@ -32,25 +34,25 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h1>Register</h1>
+      <h1>{t("register.title")}</h1>
       <form onSubmit={handleSubmit}>
         <div>
           <label>
-            Email
+            {t("register.email")}
             <input name="email" type="email" required />
           </label>
         </div>
         <div>
           <label>
-            Password
+            {t("register.password")}
             <input name="password" type="password" required minLength={3} />
           </label>
         </div>
         {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Register</button>
+        <button type="submit">{t("register.submit")}</button>
       </form>
       <p>
-        Already have an account? <Link to="/login">Login</Link>
+        {t("register.hasAccount")} <Link to="/login">{t("register.login")}</Link>
       </p>
     </div>
   );

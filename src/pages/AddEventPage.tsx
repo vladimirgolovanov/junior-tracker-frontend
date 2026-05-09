@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Picker from "react-mobile-picker";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
 import useChildren from "../hooks/useChildren";
 import { useEventTypesStore } from "../store/eventTypes";
 
-const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i));
 const MINUTES = ["00","05","10","15","20","25","30","35","40","45","50","55"];
 
@@ -14,21 +14,21 @@ interface DayOption {
   date: string;
 }
 
-function buildDayOptions(): DayOption[] {
+function buildDayOptions(monthShort: string[]): DayOption[] {
   const now = new Date();
   const opts: DayOption[] = [];
   for (let i = -7; i <= 1; i++) {
     const d = new Date(now);
     d.setDate(now.getDate() + i);
     opts.push({
-      label: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`,
+      label: `${d.getDate()} ${monthShort[d.getMonth()]}`,
       date: [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-"),
     });
   }
   return opts;
 }
 
-function nowPickerValue(): { day: string; hour: string; minute: string } {
+function nowPickerValue(monthShort: string[]): { day: string; hour: string; minute: string } {
   const now = new Date();
   const m = Math.round(now.getMinutes() / 5) * 5;
   const d = new Date(now);
@@ -39,15 +39,15 @@ function nowPickerValue(): { day: string; hour: string; minute: string } {
     d.setMinutes(m);
   }
   return {
-    day: `${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`,
+    day: `${d.getDate()} ${monthShort[d.getMonth()]}`,
     hour: String(d.getHours()),
     minute: String(d.getMinutes()).padStart(2, "0"),
   };
 }
 
-const DAY_OPTIONS = buildDayOptions();
-
 export default function AddEventPage() {
+  const { t } = useTranslation();
+  const monthShort = t("common.months").split("_");
   const token = useAuthStore((s) => s.token);
   const navigate = useNavigate();
   const children = useChildren();
@@ -55,7 +55,8 @@ export default function AddEventPage() {
   const [submitError, setSubmitError] = useState("");
 
   const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
-  const [pickerValue, setPickerValue] = useState<{ day: string; hour: string; minute: string }>(nowPickerValue());
+  const [dayOptions] = useState<DayOption[]>(() => buildDayOptions(monthShort));
+  const [pickerValue, setPickerValue] = useState<{ day: string; hour: string; minute: string }>(() => nowPickerValue(monthShort));
   const [description, setDescription] = useState("");
   const [volume, setVolume] = useState("");
   const [isCurrentAsleep, setIsCurrentAsleep] = useState<boolean | null>(null);
@@ -93,7 +94,7 @@ export default function AddEventPage() {
 
   async function handleAddEvent() {
     if (!selectedTypeId) return;
-    const dayEntry = DAY_OPTIONS.find((d) => d.label === pickerValue.day);
+    const dayEntry = dayOptions.find((d) => d.label === pickerValue.day);
     if (!dayEntry) return;
     const isoLocal = `${dayEntry.date}T${pickerValue.hour.padStart(2, "0")}:${pickerValue.minute}:00`;
     const body = {
@@ -114,7 +115,7 @@ export default function AddEventPage() {
       if (!r.ok) throw new Error("Failed");
       navigate(-1);
     } catch {
-      setSubmitError("Failed to save event");
+      setSubmitError(t("addEvent.saveFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -145,7 +146,7 @@ export default function AddEventPage() {
         wheelMode="natural"
       >
         <Picker.Column name="day">
-          {DAY_OPTIONS.map((d) => (
+          {dayOptions.map((d) => (
             <Picker.Item key={d.label} value={d.label}>{d.label}</Picker.Item>
           ))}
         </Picker.Column>
@@ -163,34 +164,34 @@ export default function AddEventPage() {
 
       {selectedType?.describe_input && (
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          Description
+          {t("addEvent.description")}
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional"
+            placeholder={t("addEvent.optional")}
           />
         </label>
       )}
 
       {selectedType?.volume_input && (
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          Volume (ml)
+          {t("addEvent.volume")}
           <input
             type="number"
             min={0}
             value={volume}
             onChange={(e) => setVolume(e.target.value)}
-            placeholder="Optional"
+            placeholder={t("addEvent.optional")}
           />
         </label>
       )}
 
       {submitError && <div style={{ color: "red" }}>{submitError}</div>}
       <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
-        <button type="button" onClick={() => navigate(-1)}>Cancel</button>
+        <button type="button" onClick={() => navigate(-1)}>{t("addEvent.cancel")}</button>
         <button type="button" disabled={!selectedTypeId || submitting} onClick={handleAddEvent}>
-          {submitting ? "Saving..." : "Save"}
+          {submitting ? t("addEvent.saving") : t("addEvent.save")}
         </button>
       </div>
     </div>

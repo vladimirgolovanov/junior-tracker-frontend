@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
 import { useChildrenStore } from "../store/children";
 import { useEventTypesStore } from "../store/eventTypes";
@@ -26,6 +27,7 @@ interface RowEdit {
 }
 
 export default function ChildSettingsPage() {
+  const { t } = useTranslation();
   const token = useAuthStore((s) => s.token);
   const resetChildren = useChildrenStore((s) => s.reset);
   const resetEventTypes = useEventTypesStore((s) => s.reset);
@@ -128,12 +130,12 @@ export default function ChildSettingsPage() {
       });
       if (!r.ok) {
         const body = await r.json().catch(() => ({}));
-        setChildSaveError(body?.detail ?? `Error ${r.status}`);
+        setChildSaveError(body?.detail ?? t("settings.errorStatus", { status: r.status }));
       } else {
         resetChildren();
       }
     } catch {
-      setChildSaveError("Network error");
+      setChildSaveError(t("settings.networkError"));
     } finally {
       setChildSaving(false);
     }
@@ -166,14 +168,14 @@ export default function ChildSettingsPage() {
       });
       if (!r.ok) {
         const body = await r.json().catch(() => ({}));
-        setRowErrors((prev) => ({ ...prev, [id]: body?.detail ?? `Error ${r.status}` }));
+        setRowErrors((prev) => ({ ...prev, [id]: body?.detail ?? t("settings.errorStatus", { status: r.status }) }));
       } else {
         const updated: SettingsEventType = await r.json();
         setEventTypes((prev) => prev.map((et) => (et.id === id ? updated : et)));
         resetEventTypes();
       }
     } catch {
-      setRowErrors((prev) => ({ ...prev, [id]: "Network error" }));
+      setRowErrors((prev) => ({ ...prev, [id]: t("settings.networkError") }));
     } finally {
       setRowSaving((prev) => ({ ...prev, [id]: false }));
     }
@@ -204,7 +206,7 @@ export default function ChildSettingsPage() {
       });
       if (!r.ok) {
         const body = await r.json().catch(() => ({}));
-        setNewError(body?.detail ?? `Error ${r.status}`);
+        setNewError(body?.detail ?? t("settings.errorStatus", { status: r.status }));
       } else {
         const created: SettingsEventType = await r.json();
         setEventTypes((prev) => [...prev, created]);
@@ -222,19 +224,19 @@ export default function ChildSettingsPage() {
         setNewKeywords("");
       }
     } catch {
-      setNewError("Network error");
+      setNewError(t("settings.networkError"));
     } finally {
       setNewSaving(false);
     }
   }
 
   if (children.length === 0) {
-    return <p>Loading...</p>;
+    return <p>{t("settings.loading")}</p>;
   }
 
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px" }}>
-      <h2>Settings</h2>
+      <h2>{t("settings.title")}</h2>
 
       {children.length > 1 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
@@ -252,10 +254,10 @@ export default function ChildSettingsPage() {
       )}
 
       <section style={{ marginBottom: 32 }}>
-        <h3>Child info</h3>
+        <h3>{t("settings.childInfo")}</h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 300 }}>
           <label>
-            Name
+            {t("settings.name")}
             <input
               value={childName}
               onChange={(e) => setChildName(e.target.value)}
@@ -263,7 +265,7 @@ export default function ChildSettingsPage() {
             />
           </label>
           <label>
-            Timezone
+            {t("settings.timezone")}
             <select
               value={childTimezone}
               onChange={(e) => setChildTimezone(e.target.value)}
@@ -276,7 +278,7 @@ export default function ChildSettingsPage() {
           </label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button type="button" onClick={saveChild} disabled={childSaving}>
-              {childSaving ? "Saving..." : "Save"}
+              {childSaving ? t("settings.saving") : t("settings.save")}
             </button>
             {childSaveError && <span style={{ color: "red" }}>{childSaveError}</span>}
           </div>
@@ -284,17 +286,17 @@ export default function ChildSettingsPage() {
       </section>
 
       <section style={{ marginBottom: 32 }}>
-        <h3>Event types</h3>
+        <h3>{t("settings.eventTypes")}</h3>
         {etLoading ? (
-          <p>Loading...</p>
+          <p>{t("settings.loading")}</p>
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th style={th}>Name</th>
-                <th style={th}>Format</th>
-                <th style={th}>Color</th>
-                <th style={th}>Keywords</th>
+                <th style={th}>{t("settings.name")}</th>
+                <th style={th}>{t("settings.colFormat")}</th>
+                <th style={th}>{t("settings.colColor")}</th>
+                <th style={th}>{t("settings.colKeywords")}</th>
                 <th style={th}></th>
               </tr>
             </thead>
@@ -318,7 +320,7 @@ export default function ChildSettingsPage() {
                       <input
                         value={edit.color}
                         onChange={(e) => updateRow(et.id, "color", e.target.value)}
-                        placeholder="rrggbb"
+                        placeholder={t("settings.colorPlaceholder")}
                         style={{ width: 80 }}
                       />
                     </td>
@@ -326,7 +328,7 @@ export default function ChildSettingsPage() {
                       <input
                         value={edit.keywords}
                         onChange={(e) => updateRow(et.id, "keywords", e.target.value)}
-                        placeholder="comma separated"
+                        placeholder={t("settings.keywordsPlaceholder")}
                         style={{ width: "100%" }}
                       />
                     </td>
@@ -336,7 +338,7 @@ export default function ChildSettingsPage() {
                         onClick={() => saveRow(et.id)}
                         disabled={rowSaving[et.id]}
                       >
-                        {rowSaving[et.id] ? "..." : "Save"}
+                        {rowSaving[et.id] ? t("settings.rowSaving") : t("settings.save")}
                       </button>
                       {rowErrors[et.id] && (
                         <div style={{ color: "red", fontSize: 11 }}>{rowErrors[et.id]}</div>
@@ -351,10 +353,10 @@ export default function ChildSettingsPage() {
       </section>
 
       <section>
-        <h3>Add event type</h3>
+        <h3>{t("settings.addEventType")}</h3>
         <form onSubmit={createEventType} style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 300 }}>
           <label>
-            Name *
+            {t("settings.nameRequired")}
             <input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
@@ -363,7 +365,7 @@ export default function ChildSettingsPage() {
             />
           </label>
           <label>
-            Format *
+            {t("settings.formatRequired")}
             <select
               value={newFormat}
               onChange={(e) => setNewFormat(e.target.value)}
@@ -376,26 +378,26 @@ export default function ChildSettingsPage() {
             </select>
           </label>
           <label>
-            Color
+            {t("settings.colColor")}
             <input
               value={newColor}
               onChange={(e) => setNewColor(e.target.value)}
-              placeholder="rrggbb"
+              placeholder={t("settings.colorPlaceholder")}
               style={{ display: "block", width: "100%", marginTop: 4 }}
             />
           </label>
           <label>
-            Keywords
+            {t("settings.colKeywords")}
             <input
               value={newKeywords}
               onChange={(e) => setNewKeywords(e.target.value)}
-              placeholder="comma separated"
+              placeholder={t("settings.keywordsPlaceholder")}
               style={{ display: "block", width: "100%", marginTop: 4 }}
             />
           </label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button type="submit" disabled={newSaving}>
-              {newSaving ? "Adding..." : "Add"}
+              {newSaving ? t("settings.adding") : t("settings.add")}
             </button>
             {newError && <span style={{ color: "red" }}>{newError}</span>}
           </div>

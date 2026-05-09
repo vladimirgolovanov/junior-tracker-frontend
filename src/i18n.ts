@@ -1,0 +1,91 @@
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+
+i18n.use(initReactI18next).init({
+  resources: {
+    en: {
+      translation: {
+        "common.months": "Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec",
+
+        "nav.appName": "Junior tracker",
+        "nav.chart": "Chart",
+        "nav.addEvent": "Add event",
+        "nav.settings": "Settings",
+        "nav.logout": "Logout",
+        "nav.login": "Login",
+        "nav.register": "Register",
+
+        "login.title": "Login",
+        "login.email": "Email",
+        "login.password": "Password",
+        "login.submit": "Login",
+        "login.failed": "Login failed",
+        "login.noAccount": "No account?",
+        "login.register": "Register",
+
+        "register.title": "Register",
+        "register.email": "Email",
+        "register.password": "Password",
+        "register.submit": "Register",
+        "register.failed": "Registration failed",
+        "register.hasAccount": "Already have an account?",
+        "register.login": "Login",
+
+        "addEvent.description": "Description",
+        "addEvent.optional": "Optional",
+        "addEvent.volume": "Volume (ml)",
+        "addEvent.cancel": "Cancel",
+        "addEvent.save": "Save",
+        "addEvent.saving": "Saving...",
+        "addEvent.saveFailed": "Failed to save event",
+
+        "chart.bedtime": "Bedtime:",
+        "chart.currentSleep": "Current sleep:",
+        "chart.currentAwake": "Current awake:",
+        "chart.awake": "Awake:",
+        "chart.wakeUp": "Wake up:",
+        "chart.totalSleep": "Total sleep:",
+        "chart.nightSleep": "Night sleep:",
+        "chart.daySleep": "Day sleep:",
+        "chart.cycle": "Cycle:",
+        "chart.today": "Today",
+        "chart.yesterday": "Yesterday",
+        "chart.dayBefore": "Day before",
+        "chart.child": "Child",
+        "chart.dateFrom": "Date from",
+        "chart.dateTo": "Date to",
+        "chart.load": "Load",
+        "chart.loadFailed": "Failed to load chart data",
+
+        "settings.loading": "Loading...",
+        "settings.title": "Settings",
+        "settings.childInfo": "Child info",
+        "settings.name": "Name",
+        "settings.timezone": "Timezone",
+        "settings.save": "Save",
+        "settings.saving": "Saving...",
+        "settings.eventTypes": "Event types",
+        "settings.colFormat": "Format",
+        "settings.colColor": "Color",
+        "settings.colKeywords": "Keywords",
+        "settings.addEventType": "Add event type",
+        "settings.nameRequired": "Name *",
+        "settings.formatRequired": "Format *",
+        "settings.colorPlaceholder": "rrggbb",
+        "settings.keywordsPlaceholder": "comma separated",
+        "settings.adding": "Adding...",
+        "settings.add": "Add",
+        "settings.rowSaving": "...",
+        "settings.errorStatus": "Error {{status}}",
+        "settings.networkError": "Network error",
+      },
+    },
+  },
+  lng: "en",
+  fallbackLng: "en",
+  interpolation: {
+    escapeValue: false,
+  },
+});
+
+export default i18n;

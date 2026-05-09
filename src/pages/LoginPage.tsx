@@ -1,9 +1,11 @@
 import { FormEvent, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import client from "../api/client";
 import { useAuthStore } from "../store/auth";
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const setToken = useAuthStore((s) => s.setToken);
   const [error, setError] = useState("");
@@ -30,7 +32,7 @@ export default function LoginPage() {
     });
 
     if (err) {
-      setError(typeof err.detail === "string" ? err.detail : "Login failed");
+      setError(typeof err.detail === "string" ? err.detail : t("login.failed"));
       return;
     }
 
@@ -40,25 +42,25 @@ export default function LoginPage() {
 
   return (
     <div>
-      <h1>Login</h1>
+      <h1>{t("login.title")}</h1>
       <form onSubmit={handleSubmit}>
         <div>
           <label>
-            Email
+            {t("login.email")}
             <input name="username" type="email" required />
           </label>
         </div>
         <div>
           <label>
-            Password
+            {t("login.password")}
             <input name="password" type="password" required />
           </label>
         </div>
         {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Login</button>
+        <button type="submit">{t("login.submit")}</button>
       </form>
       <p>
-        No account? <Link to="/register">Register</Link>
+        {t("login.noAccount")} <Link to="/register">{t("login.register")}</Link>
       </p>
     </div>
   );

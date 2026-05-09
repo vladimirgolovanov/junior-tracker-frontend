@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
 import { useEventTypesStore } from "../store/eventTypes";
@@ -94,15 +95,13 @@ function formatDuration(minutes: number | undefined | null): string {
 
 
 
-const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 function colorForEventType(color: string | null): string {
   return color ? `#${color}` : "#000";
 }
 
-function formatDayLabel(dateStr: string): string {
+function formatDayLabel(dateStr: string, months: string[]): string {
   const [, month, day] = dateStr.split("-").map(Number);
-  return `${day} ${MONTH_NAMES[month - 1]}`;
+  return `${day} ${months[month - 1]}`;
 }
 
 function minutesToTimeLabel(minutes: number): string {
@@ -114,6 +113,7 @@ function minutesToTimeLabel(minutes: number): string {
 // --- DayColumn component ---
 
 function DayColumn({ title, data, live = true }: { title: string; data: DayData; live?: boolean }) {
+  const { t } = useTranslation();
   const wakeUpFormatted = data.awake_time ? formatTime(data.awake_time) : null;
   const reversedSegments = [...data.segments].reverse();
   let daySleepCount = data.segments.filter((s) => s.segment_type === "day_sleep").length;
@@ -124,7 +124,7 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
 
       {data.bedtime && (
         <div style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>
-          Bedtime: {formatTime(data.bedtime)}
+          {t("chart.bedtime")} {formatTime(data.bedtime)}
         </div>
       )}
 
@@ -133,18 +133,18 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
           {!!data.current_sleep && (
             <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#555", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
-              Current sleep: {formatDuration(data.current_sleep)}
+              {t("chart.currentSleep")} {formatDuration(data.current_sleep)}
             </div>
           )}
           {!!data.current_awake && (
-            <div>Current awake: {formatDuration(data.current_awake)}</div>
+            <div>{t("chart.currentAwake")} {formatDuration(data.current_awake)}</div>
           )}
         </div>
       )}
 
       {reversedSegments.map((seg, i) => {
         if (seg.segment_type === "day_awake") {
-          return <div key={i}>Awake: {formatDuration(seg.time)}</div>;
+          return <div key={i}>{t("chart.awake")} {formatDuration(seg.time)}</div>;
         }
         if (seg.segment_type === "day_sleep") {
           const num = daySleepCount--;
@@ -159,17 +159,17 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
 
       {wakeUpFormatted != null && (
         <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
-          Wake up: {wakeUpFormatted}
+          {t("chart.wakeUp")} {wakeUpFormatted}
         </div>
       )}
 
       <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
-        <div>Total sleep: {formatDuration(data.total_sleep_duration)}</div>
-        <div>Night sleep: {formatDuration(data.night_sleep_duration)}</div>
-        <div>Day sleep: {formatDuration(data.day_sleep_duration)}</div>
-        <div>Awake: {formatDuration(data.total_awake_duration)}</div>
+        <div>{t("chart.totalSleep")} {formatDuration(data.total_sleep_duration)}</div>
+        <div>{t("chart.nightSleep")} {formatDuration(data.night_sleep_duration)}</div>
+        <div>{t("chart.daySleep")} {formatDuration(data.day_sleep_duration)}</div>
+        <div>{t("chart.awake")} {formatDuration(data.total_awake_duration)}</div>
         {data.cycle_length != null && (
-          <div>Cycle: {formatDuration(data.cycle_length)}</div>
+          <div>{t("chart.cycle")} {formatDuration(data.cycle_length)}</div>
         )}
       </div>
     </div>
@@ -190,6 +190,8 @@ function getLast15Days(anchor?: string): { dateFrom: string; dateTo: string } {
 }
 
 export default function ChartPage() {
+  const { t } = useTranslation();
+  const monthNames = t("common.months").split("_");
   const [searchParams] = useSearchParams();
   const todayParam = searchParams.get("today") ?? undefined;
 
@@ -245,12 +247,12 @@ export default function ChartPage() {
     additionalIds.forEach((id) => url.searchParams.append("additional_data_ids", String(id)));
     try {
       const r = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
-      if (!r.ok) { setError("Failed to load chart data"); return; }
+      if (!r.ok) { setError(t("chart.loadFailed")); return; }
       const data: ChartResponse = await r.json();
       setRows(data.sleep_data ?? []);
       setAdditionalData(data.additional_data ?? {});
     } catch {
-      setError("Failed to load chart data");
+      setError(t("chart.loadFailed"));
     }
   }
 
@@ -284,16 +286,16 @@ export default function ChartPage() {
     <div>
       {dashboard && (
         <div className="dashboard-columns">
-          <div className="dashboard-col"><DayColumn title="Today" data={dashboard.today} live={!todayParam} /></div>
-          <div className="dashboard-col"><DayColumn title="Yesterday" data={dashboard.yesterday} /></div>
-          <div className="dashboard-col"><DayColumn title="Day before" data={dashboard.day_before_yesterday} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart.yesterday")} data={dashboard.yesterday} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart.dayBefore")} data={dashboard.day_before_yesterday} /></div>
         </div>
       )}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <label style={{ display: "none" }}>
-          Child{" "}
+          {t("chart.child")}{" "}
           <select name="child_id" required>
             {children.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -301,12 +303,12 @@ export default function ChartPage() {
           </select>
         </label>
         <label>
-          Date from <input name="date_from" type="date" defaultValue={dateFrom} required />
+          {t("chart.dateFrom")} <input name="date_from" type="date" defaultValue={dateFrom} required />
         </label>
         <label>
-          Date to <input name="date_to" type="date" defaultValue={dateTo} required />
+          {t("chart.dateTo")} <input name="date_to" type="date" defaultValue={dateTo} required />
         </label>
-        <button type="submit">Load</button>
+        <button type="submit">{t("chart.load")}</button>
       </form>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {eventTypes
@@ -360,7 +362,7 @@ export default function ChartPage() {
           </div>
           {[...byDay.entries()].reverse().map(([day, segments], index) => (
             <div key={day} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
-              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", fontSize: 9, color: "#bbb" }}>{formatDayLabel(day)}</div>
+              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", fontSize: 9, color: "#bbb" }}>{formatDayLabel(day, monthNames)}</div>
               <div
                 ref={(el) => { if (index === 0 && el) firstBarRef.current = el; }}
                 style={{
