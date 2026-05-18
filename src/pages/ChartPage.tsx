@@ -36,6 +36,13 @@ interface Segment {
   is_current?: boolean;
 }
 
+interface PredictionSegment {
+  start_dt: string;
+  end_dt: string;
+  time: number;
+  segment_type: "night_sleep" | "day_sleep" | "day_awake";
+}
+
 interface DayData {
   segments: Segment[];
   bedtime: string;
@@ -81,6 +88,24 @@ function getCurrentMinutesInTz(timezone: string): number {
     minute: "numeric",
     hour12: false,
   }).formatToParts(new Date());
+  const hour = parseInt(parts.find((p) => p.type === "hour")!.value);
+  const minute = parseInt(parts.find((p) => p.type === "minute")!.value);
+  return hour * 60 + minute;
+}
+
+function utcDtToLocalDate(utcDt: string, timezone: string): string {
+  const d = new Date(utcDt.replace(" ", "T") + "Z");
+  return d.toLocaleDateString("en-CA", { timeZone: timezone });
+}
+
+function utcDtToLocalMinutes(utcDt: string, timezone: string): number {
+  const d = new Date(utcDt.replace(" ", "T") + "Z");
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(d);
   const hour = parseInt(parts.find((p) => p.type === "hour")!.value);
   const minute = parseInt(parts.find((p) => p.type === "minute")!.value);
   return hour * 60 + minute;
@@ -194,10 +219,12 @@ export default function ChartPage() {
   const monthNames = t("common.months").split("_");
   const [searchParams] = useSearchParams();
   const todayParam = searchParams.get("today") ?? undefined;
+  const predictEnabled = searchParams.get("predict") === "1";
 
   const children = useChildren();
   const token = useAuthStore((s) => s.token);
   const [rows, setRows] = useState<ChartRow[]>([]);
+  const [predictions, setPredictions] = useState<PredictionSegment[]>([]);
   const [error, setError] = useState("");
   const eventTypes = useEventTypesStore((s) => s.eventTypes);
   const loadEventTypes = useEventTypesStore((s) => s.load);
@@ -231,6 +258,23 @@ export default function ChartPage() {
     const id = setInterval(fetchDashboard, 60_000);
     return () => clearInterval(id);
   }, [firstChildId, token, todayParam]);
+
+  useEffect(() => {
+    if (!firstChildId || !predictEnabled) return;
+
+    function fetchPredictions() {
+      const url = new URL("/api/chart/sleep-predict", window.location.origin);
+      url.searchParams.set("child_id", String(firstChildId));
+      fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+        .then((r) => r.json())
+        .then((data) => { if (Array.isArray(data?.predictions)) setPredictions(data.predictions); })
+        .catch(() => {});
+    }
+
+    fetchPredictions();
+    const id = setInterval(fetchPredictions, 60_000);
+    return () => clearInterval(id);
+  }, [firstChildId, token, predictEnabled]);
 
   useEffect(() => {
     if (!token || !firstChildId) return;
@@ -430,6 +474,35 @@ export default function ChartPage() {
                     />
                   );
                 })}
+                {predictEnabled && day === todayInTz && timezone && predictions
+                  .filter((p) => p.segment_type !== "day_awake")
+                  .filter((p) => {
+                    const sd = utcDtToLocalDate(p.start_dt, timezone);
+                    const ed = utcDtToLocalDate(p.end_dt, timezone);
+                    return sd <= todayInTz! && ed >= todayInTz!;
+                  })
+                  .map((p, i) => {
+                    const sd = utcDtToLocalDate(p.start_dt, timezone);
+                    const ed = utcDtToLocalDate(p.end_dt, timezone);
+                    const startMin = sd === todayInTz ? utcDtToLocalMinutes(p.start_dt, timezone) : 0;
+                    const endMin = ed === todayInTz ? utcDtToLocalMinutes(p.end_dt, timezone) : MINUTES_IN_DAY;
+                    const left = (startMin / MINUTES_IN_DAY) * 100;
+                    const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
+                    return (
+                      <div
+                        key={`pred-${i}`}
+                        title={`${minutesToTimeLabel(startMin)} – ${minutesToTimeLabel(endMin)}`}
+                        style={{
+                          position: "absolute",
+                          left: `${left}%`,
+                          width: `${width}%`,
+                          height: "100%",
+                          background: "rgba(74, 144, 217, 0.33)",
+                        }}
+                      />
+                    );
+                  })
+                }
                 {Object.entries(additionalData).flatMap(([typeIdStr, events]) => {
                   const typeId = Number(typeIdStr);
                   const etColor = eventTypes.find((et) => et.id === typeId)?.color ?? null;
