@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { authedFetch } from "../api/client";
 
 export interface Child {
   id: number;
@@ -23,17 +24,17 @@ let isFetching = false;
 interface ChildrenState {
   children: Child[];
   loaded: boolean;
-  load: (token: string) => void;
+  load: () => void;
   reset: () => void;
 }
 
 export const useChildrenStore = create<ChildrenState>((set, get) => ({
   children: loadCache(),
   loaded: loadCache().length > 0,
-  load: (token: string) => {
+  load: () => {
     if (get().loaded || isFetching) return;
     isFetching = true;
-    fetch("/api/children/", { headers: { Authorization: `Bearer ${token}` } })
+    authedFetch("/api/children/")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {

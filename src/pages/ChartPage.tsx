@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
 import { useEventTypesStore } from "../store/eventTypes";
+import { authedFetch } from "../api/client";
 
 // --- Chart types ---
 
@@ -248,7 +249,7 @@ export default function ChartPage() {
       const url = new URL("/api/chart/dashboard", window.location.origin);
       url.searchParams.set("child_id", String(firstChildId));
       if (todayParam) url.searchParams.set("today", todayParam);
-      fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+      authedFetch(url.toString())
         .then((r) => r.json())
         .then((data) => { if (data?.today) setDashboard(data as DashboardData); })
         .catch(() => {});
@@ -265,7 +266,7 @@ export default function ChartPage() {
     function fetchPredictions() {
       const url = new URL("/api/chart/sleep-predict", window.location.origin);
       url.searchParams.set("child_id", String(firstChildId));
-      fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+      authedFetch(url.toString())
         .then((r) => r.json())
         .then((data) => { if (Array.isArray(data?.predictions)) setPredictions(data.predictions); })
         .catch(() => {});
@@ -278,7 +279,7 @@ export default function ChartPage() {
 
   useEffect(() => {
     if (!token || !firstChildId) return;
-    loadEventTypes(token, firstChildId);
+    loadEventTypes(firstChildId);
   }, [token, firstChildId, loadEventTypes]);
 
   async function loadChart(childId: number, from: string, to: string, additionalIds: number[] = []) {
@@ -290,7 +291,7 @@ export default function ChartPage() {
     [1, 2].forEach((id) => url.searchParams.append("event_type_ids", String(id)));
     additionalIds.forEach((id) => url.searchParams.append("additional_data_ids", String(id)));
     try {
-      const r = await fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+      const r = await authedFetch(url.toString());
       if (!r.ok) { setError(t("chart.loadFailed")); return; }
       const data: ChartResponse = await r.json();
       setRows(data.sleep_data ?? []);

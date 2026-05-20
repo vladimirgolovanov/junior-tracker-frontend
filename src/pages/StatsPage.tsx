@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
 import { useChildrenStore } from "../store/children";
+import { authedFetch } from "../api/client";
 
 interface DayAnalytics {
   date: string;
@@ -95,9 +96,7 @@ export default function StatsPage() {
     if (childId === null || !token) return;
     setLoading(true);
     setError(null);
-    fetch(`/api/analytics/daily?child_id=${childId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    authedFetch(`/api/analytics/daily?child_id=${childId}`)
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`);
         return r.json();

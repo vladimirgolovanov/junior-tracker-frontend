@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Picker from "react-mobile-picker";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
+import { authedFetch } from "../api/client";
 import useChildren from "../hooks/useChildren";
 import { useEventTypesStore } from "../store/eventTypes";
 
@@ -67,14 +68,14 @@ export default function AddEventPage() {
 
   useEffect(() => {
     if (!token || !firstChildId) return;
-    loadEventTypes(token, firstChildId);
+    loadEventTypes(firstChildId);
   }, [token, firstChildId, loadEventTypes]);
 
   useEffect(() => {
     if (!token || !firstChildId) return;
     const url = new URL("/api/chart/dashboard", window.location.origin);
     url.searchParams.set("child_id", String(firstChildId));
-    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+    authedFetch(url.toString())
       .then((r) => r.json())
       .then((data) => {
         if (typeof data?.today?.is_current_asleep === "boolean") {
@@ -107,9 +108,9 @@ export default function AddEventPage() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const r = await fetch("/api/events/", {
+      const r = await authedFetch("/api/events/", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!r.ok) throw new Error("Failed");

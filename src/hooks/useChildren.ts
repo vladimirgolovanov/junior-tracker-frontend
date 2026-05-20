@@ -8,7 +8,7 @@ export default function useChildren() {
   const load = useChildrenStore((s) => s.load);
 
   useEffect(() => {
-    if (token) load(token);
+    if (token) load();
   }, [token, load]);
 
   return children;

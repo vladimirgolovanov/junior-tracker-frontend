@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { authedFetch } from "../api/client";
 
 export interface EventType {
   id: number;
@@ -32,7 +33,7 @@ let isFetching = false;
 interface EventTypesState {
   eventTypes: EventType[];
   loadedForChildId: number | null;
-  load: (token: string, childId: number) => void;
+  load: (childId: number) => void;
   reset: () => void;
 }
 
@@ -41,12 +42,12 @@ const cached = loadCache();
 export const useEventTypesStore = create<EventTypesState>((set, get) => ({
   eventTypes: cached?.data ?? [],
   loadedForChildId: cached?.childId ?? null,
-  load: (token: string, childId: number) => {
+  load: (childId: number) => {
     if (get().loadedForChildId === childId || isFetching) return;
     isFetching = true;
     const url = new URL("/api/event_types/", window.location.origin);
     url.searchParams.set("child_id", String(childId));
-    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+    authedFetch(url.toString())
       .then((r) => r.json())
       .then((data: EventType[]) => {
         if (Array.isArray(data)) {

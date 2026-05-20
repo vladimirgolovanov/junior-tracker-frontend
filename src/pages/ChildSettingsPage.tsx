@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
+import { authedFetch } from "../api/client";
 import { useChildrenStore } from "../store/children";
 import { useEventTypesStore } from "../store/eventTypes";
 
@@ -55,7 +56,7 @@ export default function ChildSettingsPage() {
   const [newSaving, setNewSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/children/", { headers: { Authorization: `Bearer ${token}` } })
+    authedFetch("/api/children/")
       .then((r) => r.json())
       .then((data: FreshChild[]) => {
         if (Array.isArray(data) && data.length > 0) {
@@ -69,9 +70,7 @@ export default function ChildSettingsPage() {
   }, [token]);
 
   useEffect(() => {
-    fetch("/api/event_types/formats", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    authedFetch("/api/event_types/formats")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -87,7 +86,7 @@ export default function ChildSettingsPage() {
     setEtLoading(true);
     const url = new URL("/api/event_types/", window.location.origin);
     url.searchParams.set("child_id", String(selectedChildId));
-    fetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } })
+    authedFetch(url.toString())
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -120,12 +119,9 @@ export default function ChildSettingsPage() {
     setChildSaving(true);
     setChildSaveError(null);
     try {
-      const r = await fetch(`/api/children/${selectedChildId}`, {
+      const r = await authedFetch(`/api/children/${selectedChildId}`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: childName, timezone: childTimezone || undefined }),
       });
       if (!r.ok) {
@@ -154,12 +150,9 @@ export default function ChildSettingsPage() {
       const keywords = edit.keywords
         ? edit.keywords.split(",").map((k) => k.trim()).filter(Boolean)
         : [];
-      const r = await fetch(`/api/event_types/${id}`, {
+      const r = await authedFetch(`/api/event_types/${id}`, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: edit.name,
           color: edit.color || null,
@@ -190,12 +183,9 @@ export default function ChildSettingsPage() {
       const keywords = newKeywords
         ? newKeywords.split(",").map((k) => k.trim()).filter(Boolean)
         : undefined;
-      const r = await fetch("/api/event_types/", {
+      const r = await authedFetch("/api/event_types/", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           child_id: selectedChildId,
           name: newName,
