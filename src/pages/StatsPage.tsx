@@ -43,7 +43,7 @@ function BarChart({ days, field, color }: BarChartProps) {
         const heightPct = Math.round((val / maxVal) * 100);
         return (
           <div key={day.date} className="stats-bar-col">
-            <div className="stats-bar-outer">
+            <div className="stats-bar-outer" style={{ backgroundColor: color + '40', borderRadius: '3px 3px 0 0' }}>
               <div
                 className="stats-bar-inner"
                 style={{ height: `${heightPct}%`, backgroundColor: color }}
