@@ -454,16 +454,23 @@ export default function ChartPage() {
                 {segments.map((seg, i) => {
                   const startMin = timeToMinutes(seg.start);
                   const endMinRaw = timeToMinutes(seg.end);
+                  let duration = endMinRaw - startMin;
                   let endMin = endMinRaw === 0 ? MINUTES_IN_DAY : endMinRaw;
+                  let current = false;
                   if (day === todayInTz && currentMinutes !== null && endMin > currentMinutes) {
                     endMin = currentMinutes;
+                    duration = currentMinutes - startMin;
+                    current = true;
                   }
                   const left = (startMin / MINUTES_IN_DAY) * 100;
                   const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
+                  const titleText = current
+                      ? `${formatDuration(duration)} | ${formatTime(seg.start)} – `
+                      : `${formatDuration(duration)} | ${formatTime(seg.start)} – ${formatTime(seg.end)}`;
                   return (
                     <div
                       key={i}
-                      title={`${formatTime(seg.start)} – ${formatTime(seg.end)}`}
+                      title={titleText}
                       style={{
                         position: "absolute",
                         left: `${left}%`,
@@ -486,12 +493,13 @@ export default function ChartPage() {
                     const ed = utcDtToLocalDate(p.end_dt, timezone);
                     const startMin = sd === todayInTz ? utcDtToLocalMinutes(p.start_dt, timezone) : 0;
                     const endMin = ed === todayInTz ? utcDtToLocalMinutes(p.end_dt, timezone) : MINUTES_IN_DAY;
+                    const duration = endMin - startMin;
                     const left = (startMin / MINUTES_IN_DAY) * 100;
                     const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
                     return (
                       <div
                         key={`pred-${i}`}
-                        title={`${minutesToTimeLabel(startMin)} – ${minutesToTimeLabel(endMin)}`}
+                        title={`${minutesToTimeLabel(startMin)} – ${minutesToTimeLabel(endMin)} | ${formatDuration(duration)}`}
                         style={{
                           position: "absolute",
                           left: `${left}%`,
