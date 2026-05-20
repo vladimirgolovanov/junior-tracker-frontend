@@ -219,7 +219,7 @@ export default function ChartPage() {
   const monthNames = t("common.months").split("_");
   const [searchParams] = useSearchParams();
   const todayParam = searchParams.get("today") ?? undefined;
-  const predictEnabled = searchParams.get("predict") === "1";
+  const predictEnabled = searchParams.get("predict") !== "0";
 
   const children = useChildren();
   const token = useAuthStore((s) => s.token);
