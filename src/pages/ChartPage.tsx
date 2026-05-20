@@ -503,6 +503,34 @@ export default function ChartPage() {
                     );
                   })
                 }
+                {predictEnabled && day === todayInTz && timezone && currentMinutes !== null && !!dashboard?.today?.current_sleep && (() => {
+                  const overlapPred = predictions.find((p) => {
+                    if (p.segment_type !== "day_awake") return false;
+                    const sd = utcDtToLocalDate(p.start_dt, timezone!);
+                    const ed = utcDtToLocalDate(p.end_dt, timezone!);
+                    const startMin = sd === todayInTz ? utcDtToLocalMinutes(p.start_dt, timezone!) : 0;
+                    const endMin = ed === todayInTz ? utcDtToLocalMinutes(p.end_dt, timezone!) : MINUTES_IN_DAY;
+                    return startMin <= currentMinutes! && endMin > currentMinutes!;
+                  });
+                  if (!overlapPred) return null;
+                  const ed = utcDtToLocalDate(overlapPred.end_dt, timezone!);
+                  const endMin = ed === todayInTz ? utcDtToLocalMinutes(overlapPred.end_dt, timezone!) : MINUTES_IN_DAY;
+                  const width = ((endMin - currentMinutes!) / MINUTES_IN_DAY) * 100;
+                  if (width <= 0) return null;
+                  return (
+                    <div
+                      key="pred-current-sleep-ext"
+                      title={`${minutesToTimeLabel(currentMinutes!)} – ${minutesToTimeLabel(endMin)}`}
+                      style={{
+                        position: "absolute",
+                        left: `${(currentMinutes! / MINUTES_IN_DAY) * 100}%`,
+                        width: `${width}%`,
+                        height: "100%",
+                        background: "rgba(74, 144, 217, 0.33)",
+                      }}
+                    />
+                  );
+                })()}
                 {Object.entries(additionalData).flatMap(([typeIdStr, events]) => {
                   const typeId = Number(typeIdStr);
                   const etColor = eventTypes.find((et) => et.id === typeId)?.color ?? null;
