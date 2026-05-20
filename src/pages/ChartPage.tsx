@@ -66,6 +66,15 @@ interface DashboardData {
   day_before_yesterday: DayData;
 }
 
+interface StatusEvent {
+  event_type_id: number;
+  event_type_name: string;
+  format: string;
+  occurred_at: string;
+  volume: number | null;
+  description: string | null;
+}
+
 // --- Helpers ---
 
 function timeToMinutes(iso: string): number {
@@ -121,6 +130,10 @@ function formatDuration(minutes: number | undefined | null): string {
 
 
 
+function minutesAgo(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+}
+
 function colorForEventType(color: string | null): string {
   return color ? `#${color}` : "#000";
 }
@@ -169,7 +182,7 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
       )}
 
       {reversedSegments.map((seg, i) => {
-        if (seg.segment_type === "day_awake") {
+        if (seg.segment_type === "day_awake" && !seg.is_current) {
           return <div key={i}>{t("chart.awake")} {formatDuration(seg.time)}</div>;
         }
         if (seg.segment_type === "day_sleep" && !seg.is_current) {
@@ -235,6 +248,7 @@ export default function ChartPage() {
   const firstBarRef = useRef<HTMLDivElement | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const [lastEvents, setLastEvents] = useState<StatusEvent[]>([]);
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
   const firstChildId = children[0]?.id;
@@ -259,6 +273,21 @@ export default function ChartPage() {
     const id = setInterval(fetchDashboard, 60_000);
     return () => clearInterval(id);
   }, [firstChildId, token, todayParam]);
+
+  useEffect(() => {
+    if (!firstChildId) return;
+    function fetchStatus() {
+      const url = new URL("/api/chart/status", window.location.origin);
+      url.searchParams.set("child_id", String(firstChildId));
+      authedFetch(url.toString())
+        .then((r) => r.json())
+        .then((data) => { if (Array.isArray(data?.last_events)) setLastEvents(data.last_events); })
+        .catch(() => {});
+    }
+    fetchStatus();
+    const id = setInterval(fetchStatus, 60_000);
+    return () => clearInterval(id);
+  }, [firstChildId, token]);
 
   useEffect(() => {
     if (!firstChildId || !predictEnabled) return;
@@ -329,6 +358,18 @@ export default function ChartPage() {
 
   return (
     <div>
+      {lastEvents.length > 0 && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
+          {lastEvents.map((ev, i) => (
+            <div key={i} style={{ background: "#f5f5f5", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ fontWeight: 500 }}>{ev.event_type_name}</span>
+              <span style={{ color: "#888" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
+              {ev.description && <span style={{ color: "#555" }}>· {ev.description}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
       {dashboard && (
         <div className="dashboard-columns">
           <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} /></div>
