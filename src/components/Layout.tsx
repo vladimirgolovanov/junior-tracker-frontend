@@ -4,6 +4,36 @@ import { useAuthStore } from "../store/auth";
 import client from "../api/client";
 import useChildren from "../hooks/useChildren";
 
+function LangToggle() {
+  const { i18n } = useTranslation();
+  const current = i18n.language;
+
+  function switchTo(lang: string) {
+    i18n.changeLanguage(lang);
+    localStorage.setItem("lang", lang);
+  }
+
+  return (
+    <span style={{ display: "flex", gap: 4, fontSize: "0.85em" }}>
+      <button
+        type="button"
+        onClick={() => switchTo("en")}
+        style={{ fontWeight: current === "en" ? "bold" : "normal", textDecoration: current === "en" ? "underline" : "none" }}
+      >
+        EN
+      </button>
+      <span>|</span>
+      <button
+        type="button"
+        onClick={() => switchTo("ru")}
+        style={{ fontWeight: current === "ru" ? "bold" : "normal", textDecoration: current === "ru" ? "underline" : "none" }}
+      >
+        RU
+      </button>
+    </span>
+  );
+}
+
 export default function Layout() {
   const { t } = useTranslation();
   const token = useAuthStore((s) => s.token);
@@ -35,6 +65,7 @@ export default function Layout() {
               </button>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <LangToggle />
               <button type="button" onClick={() => navigate("/child-settings")}>
                 {t("nav.settings")}
               </button>
@@ -45,7 +76,10 @@ export default function Layout() {
           </>
         ) : (
           <>
-            <Link to="/login">{t("nav.login")}</Link> | <Link to="/register">{t("nav.register")}</Link>
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <Link to="/login">{t("nav.login")}</Link> | <Link to="/register">{t("nav.register")}</Link>
+            </div>
+            <LangToggle />
           </>
         )}
       </nav>
