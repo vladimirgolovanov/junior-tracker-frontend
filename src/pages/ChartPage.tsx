@@ -364,6 +364,7 @@ export default function ChartPage() {
             <div key={i} style={{ background: "#f5f5f5", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
               <span style={{ fontWeight: 500 }}>{ev.event_type_name}</span>
               <span style={{ color: "#888" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
+              {ev.volume != null && <span style={{ color: "#555" }}>· {ev.volume} ml</span>}
               {ev.description && <span style={{ color: "#555" }}>· {ev.description}</span>}
             </div>
           ))}
