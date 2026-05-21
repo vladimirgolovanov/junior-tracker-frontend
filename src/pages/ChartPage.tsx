@@ -185,6 +185,9 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
         if (seg.segment_type === "day_awake" && !seg.is_current) {
           return <div key={i}>{t("chart.awake")} {formatDuration(seg.time)}</div>;
         }
+        if (seg.segment_type === "night_awake" && !seg.is_current) {
+          return <div key={i}>{t("chart.awake")} {formatDuration(seg.time)}</div>;
+        }
         if (seg.segment_type === "day_sleep" && !seg.is_current) {
           const num = daySleepCount--;
           return (
