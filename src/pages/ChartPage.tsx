@@ -121,6 +121,11 @@ function utcDtToLocalMinutes(utcDt: string, timezone: string): number {
   return hour * 60 + minute;
 }
 
+function utcDtToLocalTimeStr(utcDt: string, timezone: string): string {
+  const d = new Date(utcDt.replace(" ", "T") + "Z");
+  return d.toLocaleTimeString([], { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
 function formatDuration(minutes: number | undefined | null): string {
   if (!minutes) return "0m";
   const h = Math.floor(minutes / 60);
@@ -151,11 +156,39 @@ function minutesToTimeLabel(minutes: number): string {
 
 // --- DayColumn component ---
 
-function DayColumn({ title, data, live = true }: { title: string; data: DayData; live?: boolean }) {
+function DayColumn({ title, data, live = true, predictions, timezone }: {
+  title: string; data: DayData; live?: boolean;
+  predictions?: PredictionSegment[]; currentMinutes?: number | null; timezone?: string | null;
+}) {
   const { t } = useTranslation();
   const wakeUpFormatted = data.awake_time ? formatTime(data.awake_time) : null;
   const reversedSegments = [...data.segments].reverse();
   let daySleepCount = data.segments.filter((s) => s.segment_type === "day_sleep").length;
+
+  const nowMs = Date.now();
+
+  const sleepPred = (predictions && timezone && !!data.current_sleep)
+    ? predictions.find(p =>
+        (p.segment_type === "day_sleep" || p.segment_type === "night_sleep") &&
+        new Date(p.start_dt.replace(" ", "T") + "Z").getTime() <= nowMs &&
+        new Date(p.end_dt.replace(" ", "T") + "Z").getTime() > nowMs
+      ) ?? null
+    : null;
+
+  const awakePred = (predictions && timezone && !!data.current_awake)
+    ? predictions.find(p =>
+        p.segment_type === "day_awake" &&
+        new Date(p.start_dt.replace(" ", "T") + "Z").getTime() <= nowMs &&
+        new Date(p.end_dt.replace(" ", "T") + "Z").getTime() > nowMs
+      ) ?? null
+    : null;
+
+  const sleepMinsLeft = sleepPred
+    ? Math.round((new Date(sleepPred.end_dt.replace(" ", "T") + "Z").getTime() - nowMs) / 60_000)
+    : null;
+  const awakeMinsLeft = awakePred
+    ? Math.round((new Date(awakePred.end_dt.replace(" ", "T") + "Z").getTime() - nowMs) / 60_000)
+    : null;
 
   return (
     <div>
@@ -173,10 +206,22 @@ function DayColumn({ title, data, live = true }: { title: string; data: DayData;
             <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#555", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
               {t("chart.currentSleep")} {formatDuration(data.current_sleep)}
+              {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && timezone && (
+                <span style={{ color: "#888", fontSize: "0.9em" }}>
+                  (~{utcDtToLocalTimeStr(sleepPred.end_dt, timezone)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
+                </span>
+              )}
             </div>
           )}
           {!!data.current_awake && (
-            <div>{t("chart.currentAwake")} {formatDuration(data.current_awake)}</div>
+            <div>
+              {t("chart.currentAwake")} {formatDuration(data.current_awake)}
+              {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && timezone && (
+                <span style={{ color: "#888", fontSize: "0.9em" }}>
+                  {" "}(~{utcDtToLocalTimeStr(awakePred.end_dt, timezone)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
+                </span>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -376,7 +421,7 @@ export default function ChartPage() {
 
       {dashboard && (
         <div className="dashboard-columns">
-          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} predictions={predictEnabled ? predictions : undefined} timezone={timezone} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart.yesterday")} data={dashboard.yesterday} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart.dayBefore")} data={dashboard.day_before_yesterday} /></div>
         </div>

@@ -57,6 +57,7 @@ i18n.use(initReactI18next).init({
         "chart.dateTo": "Date to",
         "chart.load": "Load",
         "chart.loadFailed": "Failed to load chart data",
+        "chart.in": "in",
 
         "stats.title": "Statistics",
         "stats.cycleLength": "Cycle (sleep + awake)",
@@ -141,6 +142,7 @@ i18n.use(initReactI18next).init({
         "chart.dateTo": "Дата по",
         "chart.load": "Загрузить",
         "chart.loadFailed": "Ошибка загрузки",
+        "chart.in": "через",
 
         "stats.title": "Статистика",
         "stats.cycleLength": "Цикл (сон + бодрствование)",
