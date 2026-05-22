@@ -7,7 +7,7 @@ i18n.use(initReactI18next).init({
       translation: {
         "common.months": "Jan_Feb_Mar_Apr_May_Jun_Jul_Aug_Sep_Oct_Nov_Dec",
 
-        "nav.appName": "Junior tracker",
+        "nav.appName": "JT",
         "nav.chart": "Chart",
         "nav.addEvent": "Add event",
         "nav.stats": "Stats",
@@ -92,7 +92,7 @@ i18n.use(initReactI18next).init({
       translation: {
         "common.months": "Янв_Фев_Мар_Апр_Май_Июн_Июл_Авг_Сен_Окт_Ноя_Дек",
 
-        "nav.appName": "Junior tracker",
+        "nav.appName": "JT",
         "nav.chart": "График",
         "nav.addEvent": "Добавить",
         "nav.stats": "Статистика",
