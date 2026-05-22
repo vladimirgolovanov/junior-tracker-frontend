@@ -304,7 +304,7 @@ export default function ChildSettingsPage() {
                       />
                     </td>
                     <td style={td}>
-                      <span style={{ fontSize: 12, color: "#666" }}>{et.format}</span>
+                      <span style={{ fontSize: 12, color: "var(--muted)" }}>{et.format}</span>
                     </td>
                     <td style={td}>
                       <input
@@ -400,7 +400,7 @@ export default function ChildSettingsPage() {
 const th: React.CSSProperties = {
   textAlign: "left",
   padding: "4px 8px",
-  borderBottom: "1px solid #ccc",
+  borderBottom: "1px solid var(--border-muted)",
   fontSize: 13,
 };
 

@@ -1,7 +1,39 @@
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --text: #000000;
+  --border: #dddddd;
+  --border-muted: #cccccc;
+  --muted: #888888;
+  --muted2: #555555;
+  --muted3: #bbbbbb;
+  --surface: #f5f5f5;
+  --surface2: #eeeeee;
+  --menu-bg: #ffffff;
+  --crosshair: rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #121212;
+  --text: #e0e0e0;
+  --border: #3a3a3a;
+  --border-muted: #444444;
+  --muted: #999999;
+  --muted2: #aaaaaa;
+  --muted3: #606060;
+  --surface: #252525;
+  --surface2: #2e2e2e;
+  --menu-bg: #1e1e1e;
+  --crosshair: rgba(255, 255, 255, 0.5);
+}
+
 body {
   font-family: system-ui, sans-serif;
   margin: 0;
   padding: 16px;
+  background: var(--bg);
+  color: var(--text);
 }
 
 nav {
@@ -13,7 +45,7 @@ table {
 }
 
 th, td {
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-muted);
   padding: 4px 8px;
   text-align: left;
 }
@@ -76,7 +108,7 @@ th, td {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #555;
+  color: var(--muted2);
 }
 
 .stats-bar-chart {}
@@ -135,7 +167,7 @@ th, td {
 
 .stats-bar-date {
   font-size: 10px;
-  color: #888;
+  color: var(--muted);
   margin-top: 4px;
   white-space: nowrap;
 }

@@ -2,12 +2,13 @@ import { useState, useRef, useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
+import { useThemeStore } from "../store/theme";
 import client from "../api/client";
 import useChildren from "../hooks/useChildren";
 
 const navBtnStyle: React.CSSProperties = {
   background: "none", border: "none", padding: 0,
-  cursor: "pointer", color: "inherit", font: "inherit",
+  cursor: "pointer", color: "inherit", font: "inherit", textAlign: "left",
 };
 
 function LangToggle() {
@@ -36,6 +37,31 @@ function LangToggle() {
       >
         RU
       </button>
+    </span>
+  );
+}
+
+function ThemeToggle() {
+  const { mode, setMode } = useThemeStore();
+  const opts: { key: "light" | "dark" | "system"; label: string }[] = [
+    { key: "light", label: "☀" },
+    { key: "dark", label: "☾" },
+    { key: "system", label: "Auto" },
+  ];
+  return (
+    <span style={{ display: "flex", gap: 4, fontSize: "0.85em" }}>
+      {opts.map((o, i) => (
+        <span key={o.key} style={{ display: "flex", gap: 4 }}>
+          {i > 0 && <span>|</span>}
+          <button
+            type="button"
+            onClick={() => setMode(o.key)}
+            style={{ ...navBtnStyle, fontWeight: mode === o.key ? "bold" : "normal", textDecoration: mode === o.key ? "underline" : "none" }}
+          >
+            {o.label}
+          </button>
+        </span>
+      ))}
     </span>
   );
 }
@@ -95,11 +121,12 @@ export default function Layout() {
               {menuOpen && (
                 <div style={{
                   position: "absolute", right: 0, top: "100%",
-                  background: "#fff", border: "1px solid #ddd",
+                  background: "var(--menu-bg)", border: "1px solid var(--border)",
                   padding: "8px 12px", display: "flex", flexDirection: "column",
                   gap: 8, minWidth: 120, zIndex: 100, whiteSpace: "nowrap",
                 }}>
                   <LangToggle />
+                  <ThemeToggle />
                   <button type="button" style={navBtnStyle} onClick={() => { navigate("/child-settings"); setMenuOpen(false); }}>
                     {t("nav.settings")}
                   </button>
@@ -115,7 +142,11 @@ export default function Layout() {
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <Link to="/login">{t("nav.login")}</Link> | <Link to="/register">{t("nav.register")}</Link>
             </div>
-            <LangToggle />
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <LangToggle />
+              <span style={{ fontSize: "0.85em" }}>|</span>
+              <ThemeToggle />
+            </div>
           </>
         )}
       </nav>

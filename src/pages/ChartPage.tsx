@@ -195,7 +195,7 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
       {data.bedtime && (
-        <div style={{ marginBottom: 8, borderBottom: "1px solid #ddd", paddingBottom: 8 }}>
+        <div style={{ marginBottom: 8, borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
           {t("chart.bedtime")} {formatTime(data.bedtime)}
         </div>
       )}
@@ -203,11 +203,11 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
       {live && (!!data.current_sleep || !!data.current_awake) && (
         <div>
           {!!data.current_sleep && (
-            <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#555", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
+            <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--muted2)", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
               {t("chart.currentSleep")} {formatDuration(data.current_sleep)}
               {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && timezone && (
-                <span style={{ color: "#888", fontSize: "0.9em" }}>
+                <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
                   (~{utcDtToLocalTimeStr(sleepPred.end_dt, timezone)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
                 </span>
               )}
@@ -217,7 +217,7 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
             <div>
               {t("chart.currentAwake")} {formatDuration(data.current_awake)}
               {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && timezone && (
-                <span style={{ color: "#888", fontSize: "0.9em" }}>
+                <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
                   {" "}(~{utcDtToLocalTimeStr(awakePred.end_dt, timezone)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
                 </span>
               )}
@@ -236,7 +236,7 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
         if (seg.segment_type === "day_sleep" && !seg.is_current) {
           const num = daySleepCount--;
           return (
-            <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "#EEEEEE" }}>
+            <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)" }}>
               #{num} &nbsp; {formatTime(seg.start_dt)}–{formatTime(seg.end_dt)} &nbsp; {formatDuration(seg.time)}
             </div>
           );
@@ -245,12 +245,12 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
       })}
 
       {wakeUpFormatted != null && (
-        <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
+        <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
           {t("chart.wakeUp")} {wakeUpFormatted}
         </div>
       )}
 
-      <div style={{ marginTop: 8, borderTop: "1px solid #ddd", paddingTop: 8 }}>
+      <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
         <div>{t("chart.totalSleep")} {formatDuration(data.total_sleep_duration)}</div>
         <div>{t("chart.nightSleep")} {formatDuration(data.night_sleep_duration)}</div>
         <div>{t("chart.daySleep")} {formatDuration(data.day_sleep_duration)}</div>
@@ -409,11 +409,11 @@ export default function ChartPage() {
       {lastEvents.length > 0 && (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
           {lastEvents.map((ev, i) => (
-            <div key={i} style={{ background: "#f5f5f5", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
+            <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
               <span style={{ fontWeight: 500 }}>{ev.event_type_name}</span>
-              <span style={{ color: "#888" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
-              {ev.volume != null && <span style={{ color: "#555" }}>· {ev.volume} ml</span>}
-              {ev.description && <span style={{ color: "#555" }}>· {ev.description}</span>}
+              <span style={{ color: "var(--muted)" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
+              {ev.volume != null && <span style={{ color: "var(--muted2)" }}>· {ev.volume} ml</span>}
+              {ev.description && <span style={{ color: "var(--muted2)" }}>· {ev.description}</span>}
             </div>
           ))}
         </div>
@@ -480,7 +480,7 @@ export default function ChartPage() {
         >
           <div style={{ display: "flex", marginBottom: 4 }}>
             <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden", fontSize: 9 }}>30 Apr</div>
-            <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "#bbb" }}>
+            <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "var(--muted3)" }}>
               {Array.from({ length: 24 }, (_, i) => (
                 <span
                   key={i}
@@ -497,13 +497,13 @@ export default function ChartPage() {
           </div>
           {[...byDay.entries()].reverse().map(([day, segments], index) => (
             <div key={day} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
-              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", fontSize: 9, color: "#bbb" }}>{formatDayLabel(day, monthNames)}</div>
+              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", fontSize: 9, color: "var(--muted3)" }}>{formatDayLabel(day, monthNames)}</div>
               <div
                 ref={(el) => { if (index === 0 && el) firstBarRef.current = el; }}
                 style={{
                   flex: 1,
                   height: 20,
-                  background: "#eee",
+                  background: "var(--surface2)",
                   position: "relative",
                   overflow: "hidden",
                 }}
@@ -518,7 +518,7 @@ export default function ChartPage() {
                           left: `${lineLeft}%`,
                           width: 2,
                           height: "100%",
-                          background: "black",
+                          background: "var(--text)",
                           pointerEvents: "none",
                           zIndex: 1,
                         }}
@@ -531,7 +531,7 @@ export default function ChartPage() {
                           transform: "translateY(-50%)",
                           fontSize: 8,
                           lineHeight: 1,
-                          color: "black",
+                          color: "var(--text)",
                           zIndex: 2,
                           pointerEvents: "none",
                           whiteSpace: "nowrap",
@@ -663,7 +663,7 @@ export default function ChartPage() {
           ))}
           <div style={{ display: "flex", marginTop: 4 }}>
             <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden", fontSize: 9 }}>30 Apr</div>
-            <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "#bbb" }}>
+            <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "var(--muted3)" }}>
               {Array.from({ length: 24 }, (_, i) => (
                 <span
                   key={i}
@@ -695,7 +695,7 @@ export default function ChartPage() {
                     top: 0,
                     width: 1,
                     height: "100%",
-                    background: "rgba(0,0,0,0.5)",
+                    background: "var(--crosshair)",
                     pointerEvents: "none",
                     zIndex: 10,
                   }}
@@ -708,7 +708,7 @@ export default function ChartPage() {
                     transform: "translateY(-50%)",
                     fontSize: 8,
                     lineHeight: 1,
-                    color: "black",
+                    color: "var(--text)",
                     zIndex: 11,
                     pointerEvents: "none",
                     whiteSpace: "nowrap",
