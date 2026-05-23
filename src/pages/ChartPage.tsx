@@ -161,7 +161,8 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
   predictions?: PredictionSegment[]; currentMinutes?: number | null; timezone?: string | null;
 }) {
   const { t } = useTranslation();
-  const wakeUpFormatted = data.awake_time ? formatTime(data.awake_time) : null;
+  const wakeUpSource = data.awake_time || data.night_sleep_end;
+  const wakeUpFormatted = wakeUpSource ? formatTime(wakeUpSource) : null;
   const reversedSegments = [...data.segments].reverse();
   let daySleepCount = data.segments.filter((s) => s.segment_type === "day_sleep").length;
 

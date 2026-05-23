@@ -99,15 +99,9 @@ export default function Layout() {
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span>{t("nav.appName")}</span>
-              <button type="button" style={navBtnStyle} onClick={() => navigate("/chart")}>
-                {t("nav.chart")}
-              </button>
-              <button type="button" style={navBtnStyle} onClick={() => navigate("/add-event")}>
-                {t("nav.addEvent")}
-              </button>
-              <button type="button" style={navBtnStyle} onClick={() => navigate("/stats")}>
-                {t("nav.stats")}
-              </button>
+              <Link to="/chart">{t("nav.chart")}</Link>
+              <Link to="/add-event">{t("nav.addEvent")}</Link>
+              <Link to="/stats">{t("nav.stats")}</Link>
             </div>
             <div ref={menuRef} style={{ position: "relative" }}>
               <button
@@ -127,9 +121,9 @@ export default function Layout() {
                 }}>
                   <LangToggle />
                   <ThemeToggle />
-                  <button type="button" style={navBtnStyle} onClick={() => { navigate("/child-settings"); setMenuOpen(false); }}>
+                  <Link to="/child-settings" onClick={() => setMenuOpen(false)}>
                     {t("nav.settings")}
-                  </button>
+                  </Link>
                   <button type="button" style={navBtnStyle} onClick={() => { handleLogout(); setMenuOpen(false); }}>
                     {t("nav.logout")}
                   </button>
