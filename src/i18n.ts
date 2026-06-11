@@ -64,6 +64,8 @@ i18n.use(initReactI18next).init({
         "stats.daySleep": "Day sleep",
         "stats.nightSleep": "Night sleep",
         "stats.totalAwake": "Awake",
+        "stats.formulaVolume": "Formula volume (ml)",
+        "stats.formulaCount": "Formula feedings",
 
         "settings.loading": "Loading...",
         "settings.title": "Settings",
@@ -149,6 +151,8 @@ i18n.use(initReactI18next).init({
         "stats.daySleep": "Дневной сон",
         "stats.nightSleep": "Ночной сон",
         "stats.totalAwake": "Бодрствование",
+        "stats.formulaVolume": "Объём смеси (мл)",
+        "stats.formulaCount": "Кормлений смесью",
 
         "settings.loading": "Загрузка...",
         "settings.title": "Настройки",

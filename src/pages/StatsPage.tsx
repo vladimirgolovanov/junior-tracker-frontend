@@ -14,6 +14,22 @@ interface DayAnalytics {
   };
 }
 
+interface FormulaDay {
+  date: string;
+  total_volume: number;
+  count: number;
+}
+
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function daysAgo(n: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return toDateStr(d);
+}
+
 function fmtDuration(minutes: number): string {
   if (!minutes) return "0m";
   const h = Math.floor(minutes / 60);
@@ -29,18 +45,18 @@ function fmtDate(dateStr: string): string {
 }
 
 interface BarChartProps {
-  days: DayAnalytics[];
-  field: keyof DayAnalytics["data"];
+  days: { date: string; value: number }[];
   color: string;
+  fmtValue?: (v: number) => string;
 }
 
-function BarChart({ days, field, color }: BarChartProps) {
-  const maxVal = Math.max(...days.map((d) => d.data[field]), 1);
+function BarChart({ days, color, fmtValue = fmtDuration }: BarChartProps) {
+  const maxVal = Math.max(...days.map((d) => d.value), 1);
 
-  const renderGroup = (group: DayAnalytics[]) => (
+  const renderGroup = (group: { date: string; value: number }[]) => (
     <div className="stats-bar-group">
       {group.map((day) => {
-        const val = day.data[field];
+        const val = day.value;
         const heightPct = Math.round((val / maxVal) * 100);
         return (
           <div key={day.date} className="stats-bar-col">
@@ -50,7 +66,7 @@ function BarChart({ days, field, color }: BarChartProps) {
                 style={{ height: `${heightPct}%`, backgroundColor: color }}
               >
                 {val > 0 && (
-                  <span className="stats-bar-label">{fmtDuration(val)}</span>
+                  <span className="stats-bar-label">{fmtValue(val)}</span>
                 )}
               </div>
             </div>
@@ -85,6 +101,11 @@ export default function StatsPage() {
   const [days, setDays] = useState<DayAnalytics[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formulaDays, setFormulaDays] = useState<FormulaDay[]>([]);
+  const [formulaLoading, setFormulaLoading] = useState(false);
+  const [formulaError, setFormulaError] = useState<string | null>(null);
+  const [formulaDateFrom, setFormulaDateFrom] = useState(() => daysAgo(30));
+  const [formulaDateTo, setFormulaDateTo] = useState(() => toDateStr(new Date()));
 
   useEffect(() => {
     if (children.length > 0 && childId === null) {
@@ -110,6 +131,27 @@ export default function StatsPage() {
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [childId, token]);
+
+  useEffect(() => {
+    if (childId === null || !token) return;
+    setFormulaLoading(true);
+    setFormulaError(null);
+    authedFetch(
+      `/api/analytics/formula?child_id=${childId}&date_from=${formulaDateFrom}&date_to=${formulaDateTo}`
+    )
+      .then((r) => {
+        if (!r.ok) throw new Error(`${r.status}`);
+        return r.json();
+      })
+      .then((data: FormulaDay[]) => {
+        const sorted = [...data].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setFormulaDays(sorted);
+      })
+      .catch((e) => setFormulaError(e.message))
+      .finally(() => setFormulaLoading(false));
+  }, [childId, token, formulaDateFrom, formulaDateTo]);
 
   const sections: { key: keyof DayAnalytics["data"]; label: string; color: string }[] = [
     { key: "cycle_length", label: t("stats.cycleLength"), color: "#6c8ebf" },
@@ -144,9 +186,56 @@ export default function StatsPage() {
           {sections.map((s) => (
             <div key={s.key} className="stats-section">
               <h3 className="stats-section-title">{s.label}</h3>
-              <BarChart days={days} field={s.key} color={s.color} />
+              <BarChart
+                days={days.map((d) => ({ date: d.date, value: d.data[s.key] }))}
+                color={s.color}
+              />
             </div>
           ))}
+        </div>
+      )}
+
+      {formulaLoading && <p>{t("settings.loading")}</p>}
+      {formulaError && <p style={{ color: "red" }}>{formulaError}</p>}
+
+      {childId !== null && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            setFormulaDateFrom(fd.get("date_from") as string);
+            setFormulaDateTo(fd.get("date_to") as string);
+          }}
+          style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "8px 0" }}
+        >
+          <label>
+            {t("chart.dateFrom")} <input name="date_from" type="date" defaultValue={formulaDateFrom} required />
+          </label>
+          <label>
+            {t("chart.dateTo")} <input name="date_to" type="date" defaultValue={formulaDateTo} required />
+          </label>
+          <button type="submit">{t("chart.load")}</button>
+        </form>
+      )}
+
+      {!formulaLoading && formulaDays.length > 0 && (
+        <div className="stats-sections">
+          <div className="stats-section">
+            <h3 className="stats-section-title">{t("stats.formulaVolume")}</h3>
+            <BarChart
+              days={formulaDays.map((d) => ({ date: d.date, value: d.total_volume }))}
+              color="#e07b39"
+              fmtValue={(v) => `${v}ml`}
+            />
+          </div>
+          <div className="stats-section">
+            <h3 className="stats-section-title">{t("stats.formulaCount")}</h3>
+            <BarChart
+              days={formulaDays.map((d) => ({ date: d.date, value: d.count }))}
+              color="#c45c8a"
+              fmtValue={(v) => String(v)}
+            />
+          </div>
         </div>
       )}
     </div>
