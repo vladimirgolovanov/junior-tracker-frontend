@@ -30,11 +30,13 @@ interface ChartResponse {
 // --- Dashboard types ---
 
 interface Segment {
-  time: number;
-  start_dt: string;
-  end_dt: string;
-  segment_type: "day_awake" | "day_sleep" | "night_sleep" | "night_awake";
-  is_current?: boolean;
+  start: string;
+  end: string;
+  minutes: number;
+  state: "sleep" | "awake";
+  day_part: "day" | "night";
+  nap_number: number | null;
+  is_current: boolean;
 }
 
 interface PredictionSegment {
@@ -46,18 +48,18 @@ interface PredictionSegment {
 
 interface DayData {
   segments: Segment[];
-  bedtime: string;
-  current_sleep: number;
-  current_awake: number;
-  total_sleep_duration: number;
-  night_sleep_duration: number;
-  day_sleep_duration: number;
-  total_awake_duration: number;
-  day_awake_duration: number;
-  night_awake_duration: number;
-  night_sleep_end: string;
-  awake_time: string;
-  cycle_length: number;
+  bedtime: string | null;
+  morning_awake_time: string | null;
+  total_sleep_minutes: number;
+  day_sleep_minutes: number;
+  night_sleep_minutes: number;
+  total_awake_minutes: number;
+  day_awake_minutes: number;
+  night_awake_minutes: number;
+  current_sleep_minutes: number;
+  current_awake_minutes: number;
+  is_currently_asleep: boolean;
+  cycle_length_minutes: number;
 }
 
 interface DashboardData {
@@ -161,14 +163,12 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
   predictions?: PredictionSegment[]; currentMinutes?: number | null; timezone?: string | null;
 }) {
   const { t } = useTranslation();
-  const wakeUpSource = data.awake_time || data.night_sleep_end;
+  const wakeUpSource = data.morning_awake_time;
   const wakeUpFormatted = wakeUpSource ? formatTime(wakeUpSource) : null;
-  const reversedSegments = [...data.segments].reverse();
-  let daySleepCount = data.segments.filter((s) => s.segment_type === "day_sleep").length;
 
   const nowMs = Date.now();
 
-  const sleepPred = (predictions && timezone && !!data.current_sleep)
+  const sleepPred = (predictions && timezone && data.is_currently_asleep)
     ? predictions.find(p =>
         (p.segment_type === "day_sleep" || p.segment_type === "night_sleep") &&
         new Date(p.start_dt.replace(" ", "T") + "Z").getTime() <= nowMs &&
@@ -176,7 +176,7 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
       ) ?? null
     : null;
 
-  const awakePred = (predictions && timezone && !!data.current_awake)
+  const awakePred = (predictions && timezone && !data.is_currently_asleep)
     ? predictions.find(p =>
         p.segment_type === "day_awake" &&
         new Date(p.start_dt.replace(" ", "T") + "Z").getTime() <= nowMs &&
@@ -201,12 +201,12 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
         </div>
       )}
 
-      {live && (!!data.current_sleep || !!data.current_awake) && (
+      {live && (data.current_sleep_minutes > 0 || data.current_awake_minutes > 0) && (
         <div>
-          {!!data.current_sleep && (
+          {data.is_currently_asleep && data.current_sleep_minutes > 0 && (
             <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
               <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--muted2)", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
-              {t("chart.currentSleep")} {formatDuration(data.current_sleep)}
+              {t("chart.currentSleep")} {formatDuration(data.current_sleep_minutes)}
               {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && timezone && (
                 <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
                   (~{utcDtToLocalTimeStr(sleepPred.end_dt, timezone)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
@@ -214,9 +214,9 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
               )}
             </div>
           )}
-          {!!data.current_awake && (
+          {!data.is_currently_asleep && data.current_awake_minutes > 0 && (
             <div>
-              {t("chart.currentAwake")} {formatDuration(data.current_awake)}
+              {t("chart.currentAwake")} {formatDuration(data.current_awake_minutes)}
               {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && timezone && (
                 <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
                   {" "}(~{utcDtToLocalTimeStr(awakePred.end_dt, timezone)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
@@ -227,18 +227,14 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
         </div>
       )}
 
-      {reversedSegments.map((seg, i) => {
-        if (seg.segment_type === "day_awake" && !seg.is_current) {
-          return <div key={i}>{t("chart.awake")} {formatDuration(seg.time)}</div>;
+      {data.segments.map((seg, i) => {
+        if (seg.state === "awake" && !seg.is_current) {
+          return <div key={i}>{t("chart.awake")} {formatDuration(seg.minutes)}</div>;
         }
-        if (seg.segment_type === "night_awake" && !seg.is_current) {
-          return <div key={i}>{t("chart.awake")} {formatDuration(seg.time)}</div>;
-        }
-        if (seg.segment_type === "day_sleep" && !seg.is_current) {
-          const num = daySleepCount--;
+        if (seg.state === "sleep" && seg.day_part === "day" && !seg.is_current) {
           return (
             <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)" }}>
-              #{num} &nbsp; {formatTime(seg.start_dt)}–{formatTime(seg.end_dt)} &nbsp; {formatDuration(seg.time)}
+              #{seg.nap_number} &nbsp; {formatTime(seg.start)}–{formatTime(seg.end)} &nbsp; {formatDuration(seg.minutes)}
             </div>
           );
         }
@@ -252,12 +248,12 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
       )}
 
       <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-        <div>{t("chart.totalSleep")} {formatDuration(data.total_sleep_duration)}</div>
-        <div>{t("chart.nightSleep")} {formatDuration(data.night_sleep_duration)}</div>
-        <div>{t("chart.daySleep")} {formatDuration(data.day_sleep_duration)}</div>
-        <div>{t("chart.awake")} {formatDuration(data.total_awake_duration)}</div>
-        {data.cycle_length != null && (
-          <div>{t("chart.cycle")} {formatDuration(data.cycle_length)}</div>
+        <div>{t("chart.totalSleep")} {formatDuration(data.total_sleep_minutes)}</div>
+        <div>{t("chart.nightSleep")} {formatDuration(data.night_sleep_minutes)}</div>
+        <div>{t("chart.daySleep")} {formatDuration(data.day_sleep_minutes)}</div>
+        <div>{t("chart.awake")} {formatDuration(data.total_awake_minutes)}</div>
+        {data.cycle_length_minutes != null && (
+          <div>{t("chart.cycle")} {formatDuration(data.cycle_length_minutes)}</div>
         )}
       </div>
     </div>
@@ -603,7 +599,7 @@ export default function ChartPage() {
                     );
                   })
                 }
-                {predictEnabled && day === todayInTz && timezone && currentMinutes !== null && !!dashboard?.today?.current_sleep && (() => {
+                {predictEnabled && day === todayInTz && timezone && currentMinutes !== null && dashboard?.today?.is_currently_asleep && (() => {
                   const overlapPred = predictions.find((p) => {
                     if (p.segment_type !== "day_awake") return false;
                     const sd = utcDtToLocalDate(p.start_dt, timezone!);
