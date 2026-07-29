@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
@@ -156,16 +156,12 @@ function minutesToTimeLabel(minutes: number): string {
   return `${h}:${String(m).padStart(2, "0")}`;
 }
 
-// --- DayColumn component ---
+// --- CurrentStatus component (running current sleep / awake + prediction) ---
 
-function DayColumn({ title, data, live = true, predictions, timezone }: {
-  title: string; data: DayData; live?: boolean;
-  predictions?: PredictionSegment[]; currentMinutes?: number | null; timezone?: string | null;
+function CurrentStatus({ data, predictions, timezone }: {
+  data: DayData; predictions?: PredictionSegment[]; timezone?: string | null;
 }) {
   const { t } = useTranslation();
-  const wakeUpSource = data.morning_awake_time;
-  const wakeUpFormatted = wakeUpSource ? formatTime(wakeUpSource) : null;
-
   const nowMs = Date.now();
 
   const sleepPred = (predictions && timezone && data.is_currently_asleep)
@@ -191,6 +187,45 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
     ? Math.round((new Date(awakePred.end_dt.replace(" ", "T") + "Z").getTime() - nowMs) / 60_000)
     : null;
 
+  if (data.current_sleep_minutes <= 0 && data.current_awake_minutes <= 0) return null;
+
+  return (
+    <>
+      {data.is_currently_asleep && data.current_sleep_minutes > 0 && (
+        <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--muted2)", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
+          {t("chart.currentSleep")} {formatDuration(data.current_sleep_minutes)}
+          {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && timezone && (
+            <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
+              (~{utcDtToLocalTimeStr(sleepPred.end_dt, timezone)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
+            </span>
+          )}
+        </div>
+      )}
+      {!data.is_currently_asleep && data.current_awake_minutes > 0 && (
+        <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
+          {t("chart.currentAwake")} {formatDuration(data.current_awake_minutes)}
+          {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && timezone && (
+            <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
+              (~{utcDtToLocalTimeStr(awakePred.end_dt, timezone)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
+            </span>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+// --- DayColumn component ---
+
+function DayColumn({ title, data, live = false }: {
+  title: string; data: DayData; live?: boolean;
+}) {
+  const { t } = useTranslation();
+  const wakeUpSource = data.morning_awake_time;
+  const wakeUpFormatted = wakeUpSource ? formatTime(wakeUpSource) : null;
+  const currentSeg = live ? data.segments.find((s) => s.is_current) ?? null : null;
+
   return (
     <div>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
@@ -201,29 +236,11 @@ function DayColumn({ title, data, live = true, predictions, timezone }: {
         </div>
       )}
 
-      {live && (data.current_sleep_minutes > 0 || data.current_awake_minutes > 0) && (
-        <div>
-          {data.is_currently_asleep && data.current_sleep_minutes > 0 && (
-            <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)", display: "flex", alignItems: "center", gap: 6, padding: "0 6px" }}>
-              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--muted2)", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
-              {t("chart.currentSleep")} {formatDuration(data.current_sleep_minutes)}
-              {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && timezone && (
-                <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
-                  (~{utcDtToLocalTimeStr(sleepPred.end_dt, timezone)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
-                </span>
-              )}
-            </div>
-          )}
-          {!data.is_currently_asleep && data.current_awake_minutes > 0 && (
-            <div>
-              {t("chart.currentAwake")} {formatDuration(data.current_awake_minutes)}
-              {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && timezone && (
-                <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
-                  {" "}(~{utcDtToLocalTimeStr(awakePred.end_dt, timezone)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
-                </span>
-              )}
-            </div>
-          )}
+      {currentSeg && (
+        <div style={{ marginTop: 5, marginBottom: 5 }}>
+          {currentSeg.state === "sleep"
+            ? <>{t("chart.fellAsleep")} {formatTime(currentSeg.start)}</>
+            : <>{t("chart.wokeUp")} {formatTime(currentSeg.start)}</>}
         </div>
       )}
 
@@ -401,24 +418,53 @@ export default function ChartPage() {
     else byDay.set(row.day, [row]);
   }
 
+  const isAsleep = dashboard?.today?.is_currently_asleep;
+  const sleepStartType = eventTypes.find((et) => et.format === "range");
+  const sleepEndType = eventTypes.find((et) => et.format === "range_end");
+  const formulaType = eventTypes.find((et) => et.volume_input);
+  const foodType = eventTypes.find((et) => et.describe_input);
+  const showQuickAdd = dashboard && !todayParam;
+
   return (
     <div>
-      {lastEvents.length > 0 && (
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
-          {lastEvents.map((ev, i) => (
-            <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
-              <span style={{ fontWeight: 500 }}>{ev.event_type_name}</span>
-              <span style={{ color: "var(--muted)" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
-              {ev.volume != null && <span style={{ color: "var(--muted2)" }}>· {ev.volume} ml</span>}
-              {ev.description && <span style={{ color: "var(--muted2)" }}>· {ev.description}</span>}
+      {(lastEvents.length > 0 || (dashboard && !todayParam)) && (
+        <div className="status-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", margin: "12px 0" }}>
+          <div className="last-events" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
+            {dashboard && !todayParam && (
+              <CurrentStatus data={dashboard.today} predictions={predictEnabled ? predictions : undefined} timezone={timezone} />
+            )}
+            {lastEvents.map((ev, i) => (
+              <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
+                <span style={{ fontWeight: 500 }}>{ev.event_type_name}</span>
+                <span style={{ color: "var(--muted)" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
+                {ev.volume != null && <span style={{ color: "var(--muted2)" }}>· {ev.volume} ml</span>}
+                {ev.description && <span style={{ color: "var(--muted2)" }}>· {ev.description}</span>}
+              </div>
+            ))}
+          </div>
+          {showQuickAdd && (
+            <div className="quick-add">
+              {isAsleep
+                ? sleepEndType && (
+                    <Link className="qa-btn qa-sleep-end" to={`/add-event?type=${sleepEndType.id}`}>{t("chart.qaSleepEnd")}</Link>
+                  )
+                : sleepStartType && (
+                    <Link className="qa-btn qa-sleep-start" to={`/add-event?type=${sleepStartType.id}`}>{t("chart.qaSleepStart")}</Link>
+                  )}
+              {formulaType && (
+                <Link className="qa-btn qa-formula" to={`/add-event?type=${formulaType.id}&focus=volume`}>{t("chart.qaFormula")}</Link>
+              )}
+              {foodType && (
+                <Link className="qa-btn qa-food" to={`/add-event?type=${foodType.id}&focus=description`}>{t("chart.qaFood")}</Link>
+              )}
             </div>
-          ))}
+          )}
         </div>
       )}
 
       {dashboard && (
         <div className="dashboard-columns">
-          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} predictions={predictEnabled ? predictions : undefined} timezone={timezone} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart.yesterday")} data={dashboard.yesterday} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart.dayBefore")} data={dashboard.day_before_yesterday} /></div>
         </div>

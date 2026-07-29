@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import Picker from "react-mobile-picker";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
@@ -51,11 +51,17 @@ export default function AddEventPage() {
   const monthShort = t("common.months").split("_");
   const token = useAuthStore((s) => s.token);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const typeParam = searchParams.get("type");
+  const focusParam = searchParams.get("focus");
   const children = useChildren();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(null);
+  const [selectedTypeId, setSelectedTypeId] = useState<number | null>(() => (typeParam ? Number(typeParam) : null));
+  const volumeRef = useRef<HTMLInputElement>(null);
+  const descriptionRef = useRef<HTMLInputElement>(null);
+  const focusedRef = useRef(false);
   const [dayOptions] = useState<DayOption[]>(() => buildDayOptions(monthShort));
   const [pickerValue, setPickerValue] = useState<{ day: string; hour: string; minute: string }>(() => nowPickerValue(monthShort));
   const [description, setDescription] = useState("");
@@ -92,6 +98,17 @@ export default function AddEventPage() {
   });
 
   const selectedType = eventTypes.find((et) => et.id === selectedTypeId);
+
+  useEffect(() => {
+    if (focusedRef.current || !focusParam || !selectedType) return;
+    if (focusParam === "volume" && selectedType.volume_input && volumeRef.current) {
+      volumeRef.current.focus();
+      focusedRef.current = true;
+    } else if (focusParam === "description" && selectedType.describe_input && descriptionRef.current) {
+      descriptionRef.current.focus();
+      focusedRef.current = true;
+    }
+  }, [focusParam, selectedType]);
 
   async function handleAddEvent() {
     if (!selectedTypeId) return;
@@ -167,6 +184,7 @@ export default function AddEventPage() {
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {t("addEvent.description")}
           <input
+            ref={descriptionRef}
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -179,6 +197,7 @@ export default function AddEventPage() {
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {t("addEvent.volume")}
           <input
+            ref={volumeRef}
             type="number"
             min={0}
             value={volume}
