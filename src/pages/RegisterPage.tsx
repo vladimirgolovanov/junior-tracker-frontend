@@ -1,7 +1,10 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import client from "../api/client";
+
+// The register endpoint lives on the separate v2 backend (proxied /api/v2 -> :8001),
+// which isn't part of the generated openapi-fetch schema, so we call it via fetch().
+const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
 type Mode = "create" | "join";
 
@@ -86,10 +89,14 @@ export default function RegisterPage() {
             join_code: joinCode.trim(),
           };
 
-    const { error: err } = await client.POST("/api/v2/register", { body });
+    const res = await fetch(`${API_BASE}/api/v2/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-    if (err) {
-      const apiErr = err as ApiError;
+    if (!res.ok) {
+      const apiErr = (await res.json().catch(() => ({}))) as ApiError;
       const parsed = parseFieldErrors(apiErr.errors);
       if (parsed.length > 0) {
         setFieldErrors(parsed);
