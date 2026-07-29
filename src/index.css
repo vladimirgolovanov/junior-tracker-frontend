@@ -36,6 +36,14 @@ body {
   color: var(--text);
 }
 
+/* Prevent iOS Safari from auto-zooming when a text field is focused.
+   It only zooms when the field's font-size is below 16px. */
+input,
+select,
+textarea {
+  font-size: 16px;
+}
+
 nav {
   margin-bottom: 8px;
 }
