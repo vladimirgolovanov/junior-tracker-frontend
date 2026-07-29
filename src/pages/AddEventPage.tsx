@@ -78,8 +78,8 @@ export default function AddEventPage() {
     authedFetch(url.toString())
       .then((r) => r.json())
       .then((data) => {
-        if (typeof data?.today?.is_current_asleep === "boolean") {
-          setIsCurrentAsleep(data.today.is_current_asleep);
+        if (typeof data?.today?.is_currently_asleep === "boolean") {
+          setIsCurrentAsleep(data.today.is_currently_asleep);
         }
       })
       .catch(() => {});
