@@ -24,6 +24,13 @@ spec:
                 name: junior-tracker-api
                 port:
                   number: 80
+          - path: /api/v2
+            pathType: Prefix
+            backend:
+              service:
+                name: junior-tracker-backend
+                port:
+                  number: 80
           - path: /auth
             pathType: Prefix
             backend:
