@@ -30,7 +30,7 @@ spec:
               service:
                 name: junior-tracker-backend
                 port:
-                  number: 80
+                  number: 50087
           - path: /auth
             pathType: Prefix
             backend:
