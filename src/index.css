@@ -11,6 +11,9 @@
   --surface2: #eeeeee;
   --menu-bg: #ffffff;
   --crosshair: rgba(0, 0, 0, 0.5);
+  --btn-primary-bg: #1a1a1a;
+  --btn-primary-bg-hover: #333333;
+  --btn-primary-text: #ffffff;
 }
 
 :root[data-theme="dark"] {
@@ -26,6 +29,9 @@
   --surface2: #2e2e2e;
   --menu-bg: #1e1e1e;
   --crosshair: rgba(255, 255, 255, 0.5);
+  --btn-primary-bg: #e8e8e8;
+  --btn-primary-bg-hover: #cfcfcf;
+  --btn-primary-text: #121212;
 }
 
 body {
@@ -56,11 +62,6 @@ th, td {
   border: 1px solid var(--border-muted);
   padding: 4px 8px;
   text-align: left;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.2; }
 }
 
 .dashboard-columns {
@@ -118,11 +119,68 @@ th, td {
   background: var(--surface2);
 }
 
+/* Suggested-volume hint shown inline next to the "Volume" label on the add-event form */
+.volume-hint {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--muted2);
+  cursor: pointer;
+  border-bottom: 1px dashed currentColor;
+  line-height: 1.2;
+}
+
+/* Primary action button (inverted monochrome) */
+.btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+}
+
+.btn-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-bg);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--btn-primary-bg-hover);
+  border-color: var(--btn-primary-bg-hover);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* Per-button hooks for individual styling */
 .qa-sleep-start {}
 .qa-sleep-end {}
 .qa-formula {}
 .qa-food {}
+
+/* Chart: reveal each day's date at the start of the bar on hover */
+.chart-day-date {
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  color: var(--muted3);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+  visibility: hidden;
+}
+
+.chart-day-row:hover .chart-day-date {
+  visibility: visible;
+}
 
 /* Stats page */
 .stats-page {

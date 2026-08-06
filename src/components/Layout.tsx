@@ -100,7 +100,6 @@ export default function Layout() {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span>{t("nav.appName")}</span>
               <Link to="/chart">{t("nav.chart")}</Link>
-              <Link to="/add-event">{t("nav.addEvent")}</Link>
               <Link to="/stats">{t("nav.stats")}</Link>
             </div>
             <div ref={menuRef} style={{ position: "relative" }}>

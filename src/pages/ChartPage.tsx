@@ -5,6 +5,31 @@ import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
 import { useEventTypesStore } from "../store/eventTypes";
 import { authedFetch } from "../api/client";
+import useStatus from "../hooks/useStatus";
+
+// iOS Safari only opens the software keyboard from within a user gesture.
+// The quick-add links navigate to /add-event, where the target field is
+// focused inside an effect (outside any gesture), so on iOS the field focuses
+// but the keyboard stays down. Focusing a throwaway off-screen input during
+// the tap opens the keyboard; when AddEventPage then focuses the real field,
+// iOS keeps it up (focus moving input→input). The primer lives on document.body
+// so it survives the client-side navigation, and removes itself once the real
+// field steals focus.
+//
+// The primer's inputMode must match the target field: once the keyboard is
+// open, iOS keeps its original layout across an input→input focus move, so a
+// text primer would leave a text keyboard on the numeric volume field.
+function primeIosKeyboard(inputMode: "text" | "decimal") {
+  const primer = document.createElement("input");
+  primer.setAttribute("aria-hidden", "true");
+  primer.tabIndex = -1;
+  primer.inputMode = inputMode;
+  primer.style.cssText =
+    "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;border:0;padding:0;font-size:16px;";
+  primer.addEventListener("blur", () => primer.remove(), { once: true });
+  document.body.appendChild(primer);
+  primer.focus();
+}
 
 // --- Chart types ---
 
@@ -66,15 +91,6 @@ interface DashboardData {
   today: DayData;
   yesterday: DayData;
   day_before_yesterday: DayData;
-}
-
-interface StatusEvent {
-  event_type_id: number;
-  event_type_name: string;
-  format: string;
-  occurred_at: string;
-  volume: number | null;
-  description: string | null;
 }
 
 // --- Helpers ---
@@ -193,7 +209,6 @@ function CurrentStatus({ data, predictions, timezone }: {
     <>
       {data.is_currently_asleep && data.current_sleep_minutes > 0 && (
         <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--muted2)", flexShrink: 0, animation: "pulse-dot 7s ease-in-out infinite" }} />
           {t("chart.currentSleep")} {formatDuration(data.current_sleep_minutes)}
           {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && timezone && (
             <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
@@ -226,6 +241,22 @@ function DayColumn({ title, data, live = false }: {
   const wakeUpFormatted = wakeUpSource ? formatTime(wakeUpSource) : null;
   const currentSeg = live ? data.segments.find((s) => s.is_current) ?? null : null;
 
+  const hasData =
+    data.segments.length > 0 ||
+    data.total_sleep_minutes > 0 ||
+    data.total_awake_minutes > 0 ||
+    data.bedtime != null ||
+    data.morning_awake_time != null;
+
+  if (!hasData) {
+    return (
+      <div>
+        <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
+        <div style={{ color: "var(--muted)" }}>{t("chart.noData")}</div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
@@ -236,12 +267,16 @@ function DayColumn({ title, data, live = false }: {
         </div>
       )}
 
-      {currentSeg && (
-        <div style={{ marginTop: 5, marginBottom: 5 }}>
-          {currentSeg.state === "sleep"
-            ? <>{t("chart.fellAsleep")} {formatTime(currentSeg.start)}</>
-            : <>{t("chart.wokeUp")} {formatTime(currentSeg.start)}</>}
-        </div>
+      {currentSeg && (currentSeg.state === "sleep" ? !data.bedtime : formatTime(currentSeg.start) !== wakeUpFormatted) && (
+        currentSeg.state === "sleep" ? (
+          <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)" }}>
+            {t("chart.fellAsleep")} {formatTime(currentSeg.start)}
+          </div>
+        ) : (
+          <div style={{ marginTop: 5, marginBottom: 5 }}>
+            {t("chart.wokeUp")} {formatTime(currentSeg.start)}
+          </div>
+        )
       )}
 
       {data.segments.map((seg, i) => {
@@ -251,7 +286,7 @@ function DayColumn({ title, data, live = false }: {
         if (seg.state === "sleep" && seg.day_part === "day" && !seg.is_current) {
           return (
             <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)" }}>
-              #{seg.nap_number} &nbsp; {formatTime(seg.start)}–{formatTime(seg.end)} &nbsp; {formatDuration(seg.minutes)}
+              &nbsp;#{seg.nap_number} &nbsp; {formatTime(seg.start)}–{formatTime(seg.end)} &nbsp; {formatDuration(seg.minutes)}
             </div>
           );
         }
@@ -310,13 +345,13 @@ export default function ChartPage() {
   const firstBarRef = useRef<HTMLDivElement | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [lastEvents, setLastEvents] = useState<StatusEvent[]>([]);
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
   const firstChildId = children[0]?.id;
   const timezone = children[0]?.timezone;
   const todayInTz = timezone ? getTodayInTz(timezone) : null;
   const currentMinutes = timezone ? getCurrentMinutesInTz(timezone) : null;
+  const status = useStatus(firstChildId);
 
   useEffect(() => {
     if (!firstChildId) return;
@@ -335,21 +370,6 @@ export default function ChartPage() {
     const id = setInterval(fetchDashboard, 60_000);
     return () => clearInterval(id);
   }, [firstChildId, token, todayParam]);
-
-  useEffect(() => {
-    if (!firstChildId) return;
-    function fetchStatus() {
-      const url = new URL("/api/chart/status", window.location.origin);
-      url.searchParams.set("child_id", String(firstChildId));
-      authedFetch(url.toString())
-        .then((r) => r.json())
-        .then((data) => { if (Array.isArray(data?.last_events)) setLastEvents(data.last_events); })
-        .catch(() => {});
-    }
-    fetchStatus();
-    const id = setInterval(fetchStatus, 60_000);
-    return () => clearInterval(id);
-  }, [firstChildId, token]);
 
   useEffect(() => {
     if (!firstChildId || !predictEnabled) return;
@@ -418,45 +438,56 @@ export default function ChartPage() {
     else byDay.set(row.day, [row]);
   }
 
-  const isAsleep = dashboard?.today?.is_currently_asleep;
-  const sleepStartType = eventTypes.find((et) => et.format === "range");
-  const sleepEndType = eventTypes.find((et) => et.format === "range_end");
-  const formulaType = eventTypes.find((et) => et.volume_input);
-  const foodType = eventTypes.find((et) => et.describe_input);
-  const showQuickAdd = dashboard && !todayParam;
+  const typeById = new Map(eventTypes.map((et) => [et.id, et]));
+  const visibleLastEvents = (status?.last_events ?? []).filter(
+    (ev) => typeById.get(ev.event_type_id)?.show_in_last_events !== false,
+  );
+  const quickActions = status?.quick_actions ?? [];
+  const showQuickAdd = !todayParam;
 
   return (
     <div>
-      {(lastEvents.length > 0 || (dashboard && !todayParam)) && (
+      {(visibleLastEvents.length > 0 || (dashboard && !todayParam) || showQuickAdd) && (
         <div className="status-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", margin: "12px 0" }}>
           <div className="last-events" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
             {dashboard && !todayParam && (
               <CurrentStatus data={dashboard.today} predictions={predictEnabled ? predictions : undefined} timezone={timezone} />
             )}
-            {lastEvents.map((ev, i) => (
+            {visibleLastEvents.map((ev, i) => (
               <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ fontWeight: 500 }}>{ev.event_type_name}</span>
+                <span style={{ fontWeight: 500 }}>{t(`et.${ev.name}`, ev.name)}</span>
                 <span style={{ color: "var(--muted)" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
-                {ev.volume != null && <span style={{ color: "var(--muted2)" }}>· {ev.volume} ml</span>}
-                {ev.description && <span style={{ color: "var(--muted2)" }}>· {ev.description}</span>}
+                {ev.volume != null && <span style={{ color: "var(--muted2)" }}>{ev.volume} ml</span>}
+                {ev.description && <span style={{ color: "var(--muted2)" }}>{ev.description}</span>}
               </div>
             ))}
+            {visibleLastEvents.length === 0 && (
+              <div style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", color: "var(--muted)" }}>
+                {t("chart.noData")}
+              </div>
+            )}
           </div>
           {showQuickAdd && (
             <div className="quick-add">
-              {isAsleep
-                ? sleepEndType && (
-                    <Link className="qa-btn qa-sleep-end" to={`/add-event?type=${sleepEndType.id}`}>{t("chart.qaSleepEnd")}</Link>
-                  )
-                : sleepStartType && (
-                    <Link className="qa-btn qa-sleep-start" to={`/add-event?type=${sleepStartType.id}`}>{t("chart.qaSleepStart")}</Link>
-                  )}
-              {formulaType && (
-                <Link className="qa-btn qa-formula" to={`/add-event?type=${formulaType.id}&focus=volume`}>{t("chart.qaFormula")}</Link>
-              )}
-              {foodType && (
-                <Link className="qa-btn qa-food" to={`/add-event?type=${foodType.id}&focus=description`}>{t("chart.qaFood")}</Link>
-              )}
+              {quickActions.map((qa) => {
+                const et = typeById.get(qa.event_type_id);
+                if (!et) return null;
+                const focusQuery = qa.focus ? `&focus=${qa.focus}` : "";
+                const prime =
+                  qa.focus === "volume"
+                    ? () => primeIosKeyboard("decimal")
+                    : qa.focus === "description"
+                    ? () => primeIosKeyboard("text")
+                    : undefined;
+                return (
+                  <Link key={qa.event_type_id} className={`qa-btn qa-${et.name}`} to={`/add-event?type=${et.id}${focusQuery}`} onClick={prime}>
+                    {t(`et.${et.name}`, et.name)}
+                  </Link>
+                );
+              })}
+              <Link className="qa-btn qa-add-event" to="/add-event">
+                {t("nav.addEvent")}
+              </Link>
             </div>
           )}
         </div>
@@ -470,6 +501,7 @@ export default function ChartPage() {
         </div>
       )}
 
+      {byDay.size > 0 && (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <label style={{ display: "none" }}>
@@ -490,7 +522,7 @@ export default function ChartPage() {
       </form>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {eventTypes
-          .filter((et) => et.format !== "range" && et.format !== "range_end")
+          .filter((et) => et.show_in_filters)
           .map((et) => (
             <label key={et.id} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
               <input
@@ -508,6 +540,7 @@ export default function ChartPage() {
           ))}
       </div>
       </div>
+      )}
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -522,7 +555,6 @@ export default function ChartPage() {
           onMouseLeave={() => setHoverPos(null)}
         >
           <div style={{ display: "flex", marginBottom: 4 }}>
-            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden", fontSize: 9 }}>30 Apr</div>
             <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "var(--muted3)" }}>
               {Array.from({ length: 24 }, (_, i) => (
                 <span
@@ -539,8 +571,7 @@ export default function ChartPage() {
             </div>
           </div>
           {[...byDay.entries()].reverse().map(([day, segments], index) => (
-            <div key={day} style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
-              <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", fontSize: 9, color: "var(--muted3)" }}>{formatDayLabel(day, monthNames)}</div>
+            <div key={day} className="chart-day-row" style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
               <div
                 ref={(el) => { if (index === 0 && el) firstBarRef.current = el; }}
                 style={{
@@ -551,6 +582,7 @@ export default function ChartPage() {
                   overflow: "hidden",
                 }}
               >
+                <span className="chart-day-date">{formatDayLabel(day, monthNames)}</span>
                 {day === todayInTz && currentMinutes !== null && (() => {
                   const lineLeft = (currentMinutes / MINUTES_IN_DAY) * 100;
                   return (
@@ -705,7 +737,6 @@ export default function ChartPage() {
             </div>
           ))}
           <div style={{ display: "flex", marginTop: 4 }}>
-            <div style={{ flexShrink: 0, paddingRight: 8, whiteSpace: "nowrap", visibility: "hidden", fontSize: 9 }}>30 Apr</div>
             <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "var(--muted3)" }}>
               {Array.from({ length: 24 }, (_, i) => (
                 <span
@@ -763,6 +794,10 @@ export default function ChartPage() {
             );
           })()}
         </div>
+      )}
+
+      {byDay.size === 0 && !error && (
+        <div style={{ marginTop: 16, color: "var(--muted)" }}>{t("chart.noData")}</div>
       )}
     </div>
   );

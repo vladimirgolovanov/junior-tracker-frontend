@@ -7,17 +7,6 @@ export interface Child {
   timezone?: string;
 }
 
-const CACHE_KEY = "children_cache";
-
-function loadCache(): Child[] {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
 // module-level flag — synchronous, immune to React render batching
 let isFetching = false;
 
@@ -29,8 +18,8 @@ interface ChildrenState {
 }
 
 export const useChildrenStore = create<ChildrenState>((set, get) => ({
-  children: loadCache(),
-  loaded: loadCache().length > 0,
+  children: [],
+  loaded: false,
   load: () => {
     if (get().loaded || isFetching) return;
     isFetching = true;
@@ -38,7 +27,6 @@ export const useChildrenStore = create<ChildrenState>((set, get) => ({
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
           set({ children: data, loaded: true });
         }
       })
@@ -47,7 +35,6 @@ export const useChildrenStore = create<ChildrenState>((set, get) => ({
   },
   reset: () => {
     isFetching = false;
-    localStorage.removeItem(CACHE_KEY);
     set({ children: [], loaded: false });
   },
 }));

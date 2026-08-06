@@ -57,7 +57,7 @@ export default function LoginPage() {
           </label>
         </div>
         {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">{t("login.submit")}</button>
+        <button type="submit" className="btn btn-primary">{t("login.submit")}</button>
       </form>
       <p>
         {t("login.noAccount")} <Link to="/register">{t("login.register")}</Link>

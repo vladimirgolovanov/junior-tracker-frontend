@@ -19,12 +19,14 @@ interface SettingsEventType {
   keywords: string[] | null;
   child_id: number;
   parent_id: number | null;
+  show_in_last_events?: boolean;
 }
 
 interface RowEdit {
   name: string;
   color: string;
   keywords: string;
+  show_in_last_events: boolean;
 }
 
 export default function ChildSettingsPage() {
@@ -52,6 +54,7 @@ export default function ChildSettingsPage() {
   const [newFormat, setNewFormat] = useState("");
   const [newColor, setNewColor] = useState("");
   const [newKeywords, setNewKeywords] = useState("");
+  const [newShowInLastEvents, setNewShowInLastEvents] = useState(true);
   const [newError, setNewError] = useState<string | null>(null);
   const [newSaving, setNewSaving] = useState(false);
 
@@ -97,6 +100,7 @@ export default function ChildSettingsPage() {
               name: et.name,
               color: et.color ?? "",
               keywords: et.keywords?.join(", ") ?? "",
+              show_in_last_events: et.show_in_last_events ?? true,
             };
           }
           setRowEdits(edits);
@@ -137,7 +141,7 @@ export default function ChildSettingsPage() {
     }
   }
 
-  function updateRow(id: number, field: keyof RowEdit, value: string) {
+  function updateRow(id: number, field: "name" | "color" | "keywords", value: string) {
     setRowEdits((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   }
 
@@ -157,6 +161,7 @@ export default function ChildSettingsPage() {
           name: edit.name,
           color: edit.color || null,
           keywords: keywords.length ? keywords : null,
+          show_in_last_events: edit.show_in_last_events,
         }),
       });
       if (!r.ok) {
@@ -192,6 +197,7 @@ export default function ChildSettingsPage() {
           format: newFormat,
           color: newColor || null,
           keywords: keywords?.length ? keywords : null,
+          show_in_last_events: newShowInLastEvents,
         }),
       });
       if (!r.ok) {
@@ -206,12 +212,14 @@ export default function ChildSettingsPage() {
             name: created.name,
             color: created.color ?? "",
             keywords: created.keywords?.join(", ") ?? "",
+            show_in_last_events: created.show_in_last_events ?? true,
           },
         }));
         resetEventTypes();
         setNewName("");
         setNewColor("");
         setNewKeywords("");
+        setNewShowInLastEvents(true);
       }
     } catch {
       setNewError(t("settings.networkError"));
@@ -261,13 +269,13 @@ export default function ChildSettingsPage() {
               onChange={(e) => setChildTimezone(e.target.value)}
               style={{ display: "block", width: "100%", marginTop: 4 }}
             >
-              {((Intl as any).supportedValuesOf("timeZone") as string[]).map((tz) => (
+              {(Intl as unknown as { supportedValuesOf: (key: string) => string[] }).supportedValuesOf("timeZone").map((tz) => (
                 <option key={tz} value={tz}>{tz}</option>
               ))}
             </select>
           </label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button type="button" onClick={saveChild} disabled={childSaving}>
+            <button type="button" className="btn btn-primary" onClick={saveChild} disabled={childSaving}>
               {childSaving ? t("settings.saving") : t("settings.save")}
             </button>
             {childSaveError && <span style={{ color: "red" }}>{childSaveError}</span>}
@@ -287,6 +295,7 @@ export default function ChildSettingsPage() {
                 <th style={th}>{t("settings.colFormat")}</th>
                 <th style={th}>{t("settings.colColor")}</th>
                 <th style={th}>{t("settings.colKeywords")}</th>
+                <th style={th}>{t("settings.colLastEvents")}</th>
                 <th style={th}></th>
               </tr>
             </thead>
@@ -320,6 +329,18 @@ export default function ChildSettingsPage() {
                         onChange={(e) => updateRow(et.id, "keywords", e.target.value)}
                         placeholder={t("settings.keywordsPlaceholder")}
                         style={{ width: "100%" }}
+                      />
+                    </td>
+                    <td style={{ ...td, textAlign: "center" }}>
+                      <input
+                        type="checkbox"
+                        checked={edit.show_in_last_events}
+                        onChange={(e) =>
+                          setRowEdits((prev) => ({
+                            ...prev,
+                            [et.id]: { ...prev[et.id], show_in_last_events: e.target.checked },
+                          }))
+                        }
                       />
                     </td>
                     <td style={td}>
@@ -385,8 +406,16 @@ export default function ChildSettingsPage() {
               style={{ display: "block", width: "100%", marginTop: 4 }}
             />
           </label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <input
+              type="checkbox"
+              checked={newShowInLastEvents}
+              onChange={(e) => setNewShowInLastEvents(e.target.checked)}
+            />
+            {t("settings.colLastEvents")}
+          </label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button type="submit" disabled={newSaving}>
+            <button type="submit" className="btn btn-primary" disabled={newSaving}>
               {newSaving ? t("settings.adding") : t("settings.add")}
             </button>
             {newError && <span style={{ color: "red" }}>{newError}</span>}

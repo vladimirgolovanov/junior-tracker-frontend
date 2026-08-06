@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "../store/auth";
 
 // The register endpoint lives on the separate v2 backend (proxied /api/v2 -> :8001),
 // which isn't part of the generated openapi-fetch schema, so we call it via fetch().
@@ -21,6 +22,9 @@ type ApiError = {
 
 type FieldError = { field: string; message: string };
 
+// Successful /api/v2/register response carries a token, letting us log the user in directly.
+type RegisterSuccess = { access_token: string };
+
 // Flatten the backend's { field: message } map into a renderable list.
 function parseFieldErrors(errors: ApiError["errors"]): FieldError[] {
   if (!errors || typeof errors !== "object") return [];
@@ -34,6 +38,7 @@ export default function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const setToken = useAuthStore((s) => s.setToken);
 
   const initialCode = searchParams.get(JOIN_CODE_PARAM)?.trim() ?? "";
 
@@ -107,7 +112,12 @@ export default function RegisterPage() {
       }
       return;
     }
-    navigate("/login");
+
+    // The register response includes an access token — log the user in immediately
+    // instead of bouncing them to the login page.
+    const data = (await res.json()) as RegisterSuccess;
+    setToken(data.access_token);
+    navigate("/events");
   }
 
   return (
@@ -219,7 +229,7 @@ export default function RegisterPage() {
             ))}
           </ul>
         )}
-        <button type="submit">{t("register.submit")}</button>
+        <button type="submit" className="btn btn-primary">{t("register.submit")}</button>
       </form>
       <p>
         {t("register.hasAccount")} <Link to="/login">{t("register.login")}</Link>

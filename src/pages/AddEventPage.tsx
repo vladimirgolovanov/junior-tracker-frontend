@@ -6,6 +6,7 @@ import { useAuthStore } from "../store/auth";
 import { authedFetch } from "../api/client";
 import useChildren from "../hooks/useChildren";
 import { useEventTypesStore } from "../store/eventTypes";
+import useStatus from "../hooks/useStatus";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => String(i));
 const MINUTES = ["00","05","10","15","20","25","30","35","40","45","50","55"];
@@ -66,9 +67,9 @@ export default function AddEventPage() {
   const [pickerValue, setPickerValue] = useState<{ day: string; hour: string; minute: string }>(() => nowPickerValue(monthShort));
   const [description, setDescription] = useState("");
   const [volume, setVolume] = useState("");
-  const [isCurrentAsleep, setIsCurrentAsleep] = useState<boolean | null>(null);
 
   const firstChildId = children[0]?.id;
+  const status = useStatus(firstChildId);
   const eventTypes = useEventTypesStore((s) => s.eventTypes);
   const loadEventTypes = useEventTypesStore((s) => s.load);
 
@@ -77,27 +78,9 @@ export default function AddEventPage() {
     loadEventTypes(firstChildId);
   }, [token, firstChildId, loadEventTypes]);
 
-  useEffect(() => {
-    if (!token || !firstChildId) return;
-    const url = new URL("/api/chart/dashboard", window.location.origin);
-    url.searchParams.set("child_id", String(firstChildId));
-    authedFetch(url.toString())
-      .then((r) => r.json())
-      .then((data) => {
-        if (typeof data?.today?.is_currently_asleep === "boolean") {
-          setIsCurrentAsleep(data.today.is_currently_asleep);
-        }
-      })
-      .catch(() => {});
-  }, [token, firstChildId]);
-
-  const filteredTypes = eventTypes.filter((et) => {
-    if (et.format === "range") return isCurrentAsleep !== true;
-    if (et.format === "range_end") return isCurrentAsleep !== false;
-    return true;
-  });
-
   const selectedType = eventTypes.find((et) => et.id === selectedTypeId);
+  const suggestedVolumes =
+    status?.quick_actions.find((qa) => qa.event_type_id === selectedTypeId)?.volumes ?? [];
 
   useEffect(() => {
     if (focusedRef.current || !focusParam || !selectedType) return;
@@ -142,7 +125,7 @@ export default function AddEventPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 600, margin: "0 auto" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {filteredTypes.map((et) => (
+        {eventTypes.map((et) => (
           <label key={et.id} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
             <input
               type="radio"
@@ -151,7 +134,7 @@ export default function AddEventPage() {
               checked={selectedTypeId === et.id}
               onChange={() => setSelectedTypeId(et.id)}
             />
-            {et.name}
+            {t(`et.${et.name}`, et.name)}
           </label>
         ))}
       </div>
@@ -195,10 +178,18 @@ export default function AddEventPage() {
 
       {selectedType?.volume_input && (
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {t("addEvent.volume")}
+          <span style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
+            {t("addEvent.volume")}
+            {suggestedVolumes.map((v) => (
+              <button key={v} type="button" className="volume-hint" onClick={() => setVolume(String(v))}>
+                {v}
+              </button>
+            ))}
+          </span>
           <input
             ref={volumeRef}
             type="number"
+            inputMode="decimal"
             min={0}
             value={volume}
             onChange={(e) => setVolume(e.target.value)}
@@ -208,9 +199,13 @@ export default function AddEventPage() {
       )}
 
       {submitError && <div style={{ color: "red" }}>{submitError}</div>}
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
-        <button type="button" onClick={() => navigate(-1)}>{t("addEvent.cancel")}</button>
-        <button type="button" disabled={!selectedTypeId || submitting} onClick={handleAddEvent}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={!selectedTypeId || submitting}
+          onClick={handleAddEvent}
+        >
           {submitting ? t("addEvent.saving") : t("addEvent.save")}
         </button>
       </div>
