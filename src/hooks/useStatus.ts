@@ -11,14 +11,16 @@ export interface StatusEvent {
   description: string | null;
 }
 
-// A ready-to-render quick-add button. The backend resolves each range pair
+// A ready-to-render action. The backend resolves each range pair
 // (open → its *_end, closed → its *_start) so the frontend never reasons about
 // pairing or the asleep state. `focus` mirrors the existing ?focus= autofocus;
-// `volumes` are suggested amounts (from history) for volume-input types.
-export interface QuickAction {
+// `volumes` are suggested amounts (from history) for volume-input types;
+// `show_in_quick_actions` marks which actions surface as quick-add buttons.
+export interface Action {
   event_type_id: number;
   focus: "volume" | "description" | null;
   volumes?: number[];
+  show_in_quick_actions: boolean;
 }
 
 export interface Status {
@@ -27,7 +29,7 @@ export interface Status {
   current_sleep_minutes: number;
   current_awake_minutes: number;
   last_events: StatusEvent[];
-  quick_actions: QuickAction[];
+  actions: Action[];
 }
 
 // Polls the shared /api/v2/status "pulse" endpoint once a minute. Returns null

@@ -79,8 +79,9 @@ export default function AddEventPage() {
   }, [token, firstChildId, loadEventTypes]);
 
   const selectedType = eventTypes.find((et) => et.id === selectedTypeId);
+  const typeById = new Map(eventTypes.map((et) => [et.id, et]));
   const suggestedVolumes =
-    status?.quick_actions.find((qa) => qa.event_type_id === selectedTypeId)?.volumes ?? [];
+    status?.actions.find((qa) => qa.event_type_id === selectedTypeId)?.volumes ?? [];
 
   useEffect(() => {
     if (focusedRef.current || !focusParam || !selectedType) return;
@@ -125,18 +126,22 @@ export default function AddEventPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12, maxWidth: 600, margin: "0 auto" }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-        {eventTypes.map((et) => (
-          <label key={et.id} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="event_type_id"
-              value={et.id}
-              checked={selectedTypeId === et.id}
-              onChange={() => setSelectedTypeId(et.id)}
-            />
-            {t(`et.${et.name}`, et.name)}
-          </label>
-        ))}
+        {(status?.actions ?? []).map((a) => {
+          const et = typeById.get(a.event_type_id);
+          if (!et) return null;
+          return (
+            <label key={a.event_type_id} style={{ display: "flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="event_type_id"
+                value={et.id}
+                checked={selectedTypeId === et.id}
+                onChange={() => setSelectedTypeId(et.id)}
+              />
+              {t(`et.${et.name}`, et.name)}
+            </label>
+          );
+        })}
       </div>
 
       <Picker

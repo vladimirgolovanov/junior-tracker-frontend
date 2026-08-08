@@ -474,7 +474,7 @@ export default function ChartPage() {
   const visibleLastEvents = (status?.last_events ?? []).filter(
     (ev) => typeById.get(ev.event_type_id)?.show_in_last_events !== false,
   );
-  const quickActions = status?.quick_actions ?? [];
+  const quickActions = (status?.actions ?? []).filter((a) => a.show_in_quick_actions);
   const showQuickAdd = !todayParam;
 
   return (
