@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
@@ -72,18 +72,20 @@ export default function Layout() {
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const closeMenu = () => setMenuOpen(false);
   useChildren();
 
   useEffect(() => {
     if (!menuOpen) return;
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false);
-      }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
   }, [menuOpen]);
 
   async function handleLogout() {
@@ -94,40 +96,50 @@ export default function Layout() {
 
   return (
     <div>
-      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
         {token ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span>{t("nav.appName")}</span>
-              <Link to="/chart">{t("nav.chart")}</Link>
-              <Link to="/stats">{t("nav.stats")}</Link>
+              <Link to="/chart" className="logo">{t("nav.appName")}</Link>
             </div>
-            <div ref={menuRef} style={{ position: "relative" }}>
+            <div>
               <button
                 type="button"
-                style={{ ...navBtnStyle, fontSize: "1.3em" }}
-                onClick={() => setMenuOpen((o) => !o)}
+                className="hamburger"
+                onClick={() => setMenuOpen(true)}
                 aria-label="Menu"
+                aria-expanded={menuOpen}
               >
-                <i className="fa-regular fa-face-surprise" />
+                <i className="fa-solid fa-bars" />
               </button>
-              {menuOpen && (
-                <div style={{
-                  position: "absolute", right: 0, top: "100%",
-                  background: "var(--menu-bg)", border: "1px solid var(--border)",
-                  padding: "8px 12px", display: "flex", flexDirection: "column",
-                  gap: 8, minWidth: 120, zIndex: 100, whiteSpace: "nowrap",
-                }}>
+              <div
+                className={`drawer-backdrop${menuOpen ? " open" : ""}`}
+                onClick={closeMenu}
+              />
+              <aside className={`drawer${menuOpen ? " open" : ""}`}>
+                <div className="drawer-header">
+                  <button
+                    type="button"
+                    className="drawer-close"
+                    onClick={closeMenu}
+                    aria-label="Close"
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
+                </div>
+                <nav className="drawer-nav">
+                  <Link to="/stats" onClick={closeMenu}>{t("nav.stats")}</Link>
+                  <Link to="/invite" onClick={closeMenu}>{t("nav.invite")}</Link>
+                  <Link to="/child-settings" onClick={closeMenu}>{t("nav.settings")}</Link>
+                </nav>
+                <div className="drawer-footer">
                   <LangToggle />
                   <ThemeToggle />
-                  <Link to="/child-settings" onClick={() => setMenuOpen(false)}>
-                    {t("nav.settings")}
-                  </Link>
-                  <button type="button" style={navBtnStyle} onClick={() => { handleLogout(); setMenuOpen(false); }}>
+                  <button type="button" style={navBtnStyle} onClick={() => { handleLogout(); closeMenu(); }}>
                     {t("nav.logout")}
                   </button>
                 </div>
-              )}
+              </aside>
             </div>
           </>
         ) : (
@@ -143,7 +155,7 @@ export default function Layout() {
           </>
         )}
       </nav>
-      <hr />
+
       <Outlet />
     </div>
   );

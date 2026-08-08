@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useChildren from "../hooks/useChildren";
@@ -154,7 +154,7 @@ function formatDuration(minutes: number | undefined | null): string {
 
 
 function minutesAgo(iso: string): number {
-  return Math.floor((Date.now() - new Date(iso).getTime()) / 60_000);
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
 }
 
 function colorForEventType(color: string | null): string {
@@ -175,7 +175,8 @@ function minutesToTimeLabel(minutes: number): string {
 // --- CurrentStatus component (running current sleep / awake + prediction) ---
 
 function CurrentStatus({ data, predictions, timezone }: {
-  data: DayData; predictions?: PredictionSegment[]; timezone?: string | null;
+  data: { is_currently_asleep: boolean; current_sleep_minutes: number; current_awake_minutes: number };
+  predictions?: PredictionSegment[]; timezone?: string | null;
 }) {
   const { t } = useTranslation();
   const nowMs = Date.now();
@@ -325,6 +326,8 @@ function getLast15Days(anchor?: string): { dateFrom: string; dateTo: string } {
   return { dateFrom: toDateString(from), dateTo: toDateString(today) };
 }
 
+const SLEEP_EVENT_NAMES = ["sleep_start", "sleep_end"];
+
 export default function ChartPage() {
   const { t } = useTranslation();
   const monthNames = t("common.months").split("_");
@@ -339,6 +342,13 @@ export default function ChartPage() {
   const [error, setError] = useState("");
   const eventTypes = useEventTypesStore((s) => s.eventTypes);
   const loadEventTypes = useEventTypesStore((s) => s.load);
+  const sleepEventTypeIds = useMemo(
+    () =>
+      SLEEP_EVENT_NAMES.map((name) => eventTypes.find((et) => et.name === name)?.id).filter(
+        (id): id is number => id !== undefined,
+      ),
+    [eventTypes],
+  );
   const [selectedAdditionalIds, setSelectedAdditionalIds] = useState<number[]>([]);
   const [additionalData, setAdditionalData] = useState<Record<string, AdditionalEvent[]>>({});
   const chartRef = useRef<HTMLDivElement>(null);
@@ -353,39 +363,46 @@ export default function ChartPage() {
   const currentMinutes = timezone ? getCurrentMinutesInTz(timezone) : null;
   const status = useStatus(firstChildId);
 
+  // Local once-a-minute heartbeat: forces a re-render so the render-time "now"
+  // values (currentMinutes / todayInTz / minutesAgo) advance — the "now" line,
+  // the "X ago" labels and the growing current-sleep bar. Costs no network.
+  const [, setTick] = useState(0);
   useEffect(() => {
-    if (!firstChildId) return;
-
-    function fetchDashboard() {
-      const url = new URL("/api/chart/dashboard", window.location.origin);
-      url.searchParams.set("child_id", String(firstChildId));
-      if (todayParam) url.searchParams.set("today", todayParam);
-      authedFetch(url.toString())
-        .then((r) => r.json())
-        .then((data) => { if (data?.today) setDashboard(data as DashboardData); })
-        .catch(() => {});
-    }
-
-    fetchDashboard();
-    const id = setInterval(fetchDashboard, 60_000);
+    if (todayParam) return; // historical view has no live "now"
+    const id = setInterval(() => setTick((v) => v + 1), 60_000);
     return () => clearInterval(id);
+  }, [todayParam]);
+
+  // Heavy data loads on mount / real dependency changes, and in the steady state
+  // is only re-fetched when the sleep status flips (see the effect after
+  // loadChart). The single minute poller is useStatus's /api/v2/status.
+  function fetchDashboard() {
+    if (!firstChildId) return;
+    const url = new URL("/api/chart/dashboard", window.location.origin);
+    url.searchParams.set("child_id", String(firstChildId));
+    if (todayParam) url.searchParams.set("today", todayParam);
+    authedFetch(url.toString())
+      .then((r) => r.json())
+      .then((data) => { if (data?.today) setDashboard(data as DashboardData); })
+      .catch(() => {});
+  }
+
+  function fetchPredictions() {
+    if (!firstChildId || !predictEnabled) return;
+    const url = new URL("/api/chart/sleep-predict", window.location.origin);
+    url.searchParams.set("child_id", String(firstChildId));
+    authedFetch(url.toString())
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data?.predictions)) setPredictions(data.predictions); })
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    fetchDashboard();
   }, [firstChildId, token, todayParam]);
 
   useEffect(() => {
-    if (!firstChildId || !predictEnabled) return;
-
-    function fetchPredictions() {
-      const url = new URL("/api/chart/sleep-predict", window.location.origin);
-      url.searchParams.set("child_id", String(firstChildId));
-      authedFetch(url.toString())
-        .then((r) => r.json())
-        .then((data) => { if (Array.isArray(data?.predictions)) setPredictions(data.predictions); })
-        .catch(() => {});
-    }
-
     fetchPredictions();
-    const id = setInterval(fetchPredictions, 60_000);
-    return () => clearInterval(id);
   }, [firstChildId, token, predictEnabled]);
 
   useEffect(() => {
@@ -399,7 +416,7 @@ export default function ChartPage() {
     url.searchParams.set("child_id", String(childId));
     url.searchParams.set("date_from", from);
     url.searchParams.set("date_to", to);
-    [1, 2].forEach((id) => url.searchParams.append("event_type_ids", String(id)));
+    sleepEventTypeIds.forEach((id) => url.searchParams.append("event_type_ids", String(id)));
     additionalIds.forEach((id) => url.searchParams.append("additional_data_ids", String(id)));
     try {
       const r = await authedFetch(url.toString());
@@ -413,11 +430,26 @@ export default function ChartPage() {
   }
 
   useEffect(() => {
-    if (!firstChildId) return;
+    if (!firstChildId || sleepEventTypeIds.length === 0) return;
     loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds);
-    const id = setInterval(() => loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds), 60_000);
-    return () => clearInterval(id);
-  }, [firstChildId, todayParam, selectedAdditionalIds]);
+  }, [firstChildId, todayParam, selectedAdditionalIds, sleepEventTypeIds]);
+
+  // Steady-state trigger: when useStatus reports a sleep-status flip, refresh the
+  // heavy data once. Completed segments, dashboard totals and predictions change
+  // exactly at sleep start/end, so this is the only refetch they need per day.
+  const prevAsleep = useRef<boolean | null>(null);
+  useEffect(() => {
+    const cur = status?.is_currently_asleep;
+    if (cur == null || !firstChildId) return;
+    if (prevAsleep.current !== null && prevAsleep.current !== cur) {
+      fetchDashboard();
+      fetchPredictions();
+      if (sleepEventTypeIds.length > 0) {
+        loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds);
+      }
+    }
+    prevAsleep.current = cur;
+  }, [status?.is_currently_asleep]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -450,8 +482,8 @@ export default function ChartPage() {
       {(visibleLastEvents.length > 0 || (dashboard && !todayParam) || showQuickAdd) && (
         <div className="status-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", margin: "12px 0" }}>
           <div className="last-events" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-            {dashboard && !todayParam && (
-              <CurrentStatus data={dashboard.today} predictions={predictEnabled ? predictions : undefined} timezone={timezone} />
+            {status && !todayParam && (
+              <CurrentStatus data={status} predictions={predictEnabled ? predictions : undefined} timezone={timezone} />
             )}
             {visibleLastEvents.map((ev, i) => (
               <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
@@ -677,7 +709,7 @@ export default function ChartPage() {
                     );
                   })
                 }
-                {predictEnabled && day === todayInTz && timezone && currentMinutes !== null && dashboard?.today?.is_currently_asleep && (() => {
+                {predictEnabled && day === todayInTz && timezone && currentMinutes !== null && status?.is_currently_asleep && (() => {
                   const overlapPred = predictions.find((p) => {
                     if (p.segment_type !== "day_awake") return false;
                     const sd = utcDtToLocalDate(p.start_dt, timezone!);

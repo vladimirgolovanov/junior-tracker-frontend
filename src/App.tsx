@@ -7,6 +7,7 @@ import ChartPage from "./pages/ChartPage";
 import AddEventPage from "./pages/AddEventPage";
 import ChildSettingsPage from "./pages/ChildSettingsPage";
 import StatsPage from "./pages/StatsPage";
+import InvitePage from "./pages/InvitePage";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
             <Route path="/add-event" element={<AddEventPage />} />
             <Route path="/child-settings" element={<ChildSettingsPage />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/invite" element={<InvitePage />} />
           </Route>
           <Route path="*" element={<Navigate to="/chart" replace />} />
         </Route>

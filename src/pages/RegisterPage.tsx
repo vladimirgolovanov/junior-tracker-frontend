@@ -10,7 +10,7 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 type Mode = "create" | "join";
 
 // Query-string param that carries an invite/join code, e.g. /register?code=ABC123
-const JOIN_CODE_PARAM = "code";
+export const JOIN_CODE_PARAM = "code";
 
 // Shape of a backend validation error, e.g.
 // {"title":"Validation failed","status":422,"errors":{"timezone":"Field \"timezone\" is required."}}
