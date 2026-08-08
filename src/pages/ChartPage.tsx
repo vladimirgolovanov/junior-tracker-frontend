@@ -234,13 +234,23 @@ function CurrentStatus({ data, predictions, timezone }: {
 
 // --- DayColumn component ---
 
-function DayColumn({ title, data, live = false }: {
-  title: string; data: DayData; live?: boolean;
+function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
+  title: string; data: DayData; live?: boolean; fetchedAtMs?: number;
 }) {
   const { t } = useTranslation();
   const wakeUpSource = data.morning_awake_time;
   const wakeUpFormatted = wakeUpSource ? formatTime(wakeUpSource) : null;
   const currentSeg = live ? data.segments.find((s) => s.is_current) ?? null : null;
+
+  // Live minute counting between the once-a-minute refetches (which fire only on
+  // sleep/wake flips). The parent's minute heartbeat re-renders us, so `grown`
+  // recomputes each minute; a refetch re-anchors fetchedAtMs and the backend baseline.
+  const grown = live ? Math.max(0, Math.floor((Date.now() - fetchedAtMs) / 60000)) : 0;
+  const totalSleep = data.total_sleep_minutes + (currentSeg?.state === "sleep" ? grown : 0);
+  const nightSleep = data.night_sleep_minutes + (currentSeg?.state === "sleep" && currentSeg.day_part === "night" ? grown : 0);
+  const daySleep = data.day_sleep_minutes + (currentSeg?.state === "sleep" && currentSeg.day_part === "day" ? grown : 0);
+  const totalAwake = data.total_awake_minutes + (currentSeg?.state === "awake" ? grown : 0);
+  const cycle = data.cycle_length_minutes + grown;
 
   const hasData =
     data.segments.length > 0 ||
@@ -301,12 +311,12 @@ function DayColumn({ title, data, live = false }: {
       )}
 
       <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-        <div>{t("chart.totalSleep")} {formatDuration(data.total_sleep_minutes)}</div>
-        <div>{t("chart.nightSleep")} {formatDuration(data.night_sleep_minutes)}</div>
-        <div>{t("chart.daySleep")} {formatDuration(data.day_sleep_minutes)}</div>
-        <div>{t("chart.awake")} {formatDuration(data.total_awake_minutes)}</div>
+        <div>{t("chart.totalSleep")} {formatDuration(totalSleep)}</div>
+        <div>{t("chart.nightSleep")} {formatDuration(nightSleep)}</div>
+        <div>{t("chart.daySleep")} {formatDuration(daySleep)}</div>
+        <div>{t("chart.awake")} {formatDuration(totalAwake)}</div>
         {data.cycle_length_minutes != null && (
-          <div>{t("chart.cycle")} {formatDuration(data.cycle_length_minutes)}</div>
+          <div>{t("chart.cycle")} {formatDuration(cycle)}</div>
         )}
       </div>
     </div>
@@ -355,6 +365,7 @@ export default function ChartPage() {
   const firstBarRef = useRef<HTMLDivElement | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const dashboardFetchedAt = useRef<number>(0);
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
   const firstChildId = children[0]?.id;
@@ -383,7 +394,12 @@ export default function ChartPage() {
     if (todayParam) url.searchParams.set("today", todayParam);
     authedFetch(url.toString())
       .then((r) => r.json())
-      .then((data) => { if (data?.today) setDashboard(data as DashboardData); })
+      .then((data) => {
+        if (data?.today) {
+          setDashboard(data as DashboardData);
+          dashboardFetchedAt.current = Date.now();
+        }
+      })
       .catch(() => {});
   }
 
@@ -527,7 +543,7 @@ export default function ChartPage() {
 
       {dashboard && (
         <div className="dashboard-columns">
-          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} fetchedAtMs={dashboardFetchedAt.current} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart.yesterday")} data={dashboard.yesterday} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart.dayBefore")} data={dashboard.day_before_yesterday} /></div>
         </div>
