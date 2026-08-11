@@ -39,6 +39,10 @@ i18n.use(initReactI18next).init({
         "addEvent.save": "Save",
         "addEvent.saving": "Saving...",
         "addEvent.saveFailed": "Failed to save event",
+        "addEvent.rangeModeOpen": "Record the start",
+        "addEvent.rangeModeDuration": "Duration (minutes)",
+        "addEvent.willCreate": "Will create",
+        "addEvent.changeType": "Change",
 
         "chart.bedtime": "Bedtime:",
         "chart.currentSleep": "Current sleep:",
@@ -162,6 +166,10 @@ i18n.use(initReactI18next).init({
         "addEvent.save": "Сохранить",
         "addEvent.saving": "Сохранение...",
         "addEvent.saveFailed": "Ошибка сохранения",
+        "addEvent.rangeModeOpen": "Записать начало",
+        "addEvent.rangeModeDuration": "Длительность (минуты)",
+        "addEvent.willCreate": "Будет создано",
+        "addEvent.changeType": "Изменить",
 
         "chart.bedtime": "Отход ко сну:",
         "chart.currentSleep": "Текущий сон:",
