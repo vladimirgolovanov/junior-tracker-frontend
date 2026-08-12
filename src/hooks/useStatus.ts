@@ -28,15 +28,22 @@ export interface Status {
   is_currently_asleep: boolean;
   current_sleep_minutes: number;
   current_awake_minutes: number;
+  // Child-local "now" at response time: minute-of-day (0..1439) and the date.
+  current_min: number;
+  today: string;
   last_events: StatusEvent[];
   actions: Action[];
 }
 
-// Polls the shared /api/v2/status "pulse" endpoint once a minute. Returns null
-// until the first successful load (or while the endpoint is unavailable).
-export default function useStatus(childId: number | undefined): Status | null {
+// Polls the shared /api/v2/status "pulse" endpoint once a minute. `status` is null
+// until the first successful load; `fetchedAt` is Date.now() of that load so the
+// caller can advance current_min locally between polls.
+export default function useStatus(
+  childId: number | undefined,
+): { status: Status | null; fetchedAt: number } {
   const token = useAuthStore((s) => s.token);
   const [status, setStatus] = useState<Status | null>(null);
+  const [fetchedAt, setFetchedAt] = useState(0);
 
   useEffect(() => {
     if (!childId) return;
@@ -50,6 +57,7 @@ export default function useStatus(childId: number | undefined): Status | null {
         .then((data) => {
           if (!cancelled && data && typeof data.is_currently_asleep === "boolean") {
             setStatus(data as Status);
+            setFetchedAt(Date.now());
           }
         })
         .catch(() => {});
@@ -63,5 +71,5 @@ export default function useStatus(childId: number | undefined): Status | null {
     };
   }, [childId, token]);
 
-  return status;
+  return { status, fetchedAt };
 }

@@ -73,7 +73,7 @@ export default function AddEventPage() {
   const [editingType, setEditingType] = useState(false);
 
   const firstChildId = children[0]?.id;
-  const status = useStatus(firstChildId);
+  const { status } = useStatus(firstChildId);
   const eventTypes = useEventTypesStore((s) => s.eventTypes);
   const loadEventTypes = useEventTypesStore((s) => s.load);
 

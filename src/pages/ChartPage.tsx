@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useChildren from "../hooks/useChildren";
@@ -36,7 +36,7 @@ function primeIosKeyboard(inputMode: "text" | "decimal") {
 interface ChartRow {
   day: string;
   start: string;
-  end: string;
+  end: string | null; // null → current unfinished sleep (grows to "now")
 }
 
 
@@ -44,7 +44,12 @@ interface AdditionalEvent {
   id: number;
   event_type_id: number;
   occurred_at: string;
-  description: string | null;
+  // description / volume are omitted (not null) when absent for the event type.
+  description?: string | null;
+  volume?: number | null;
+  // Present only for range-type events: minutes (a completed span) or null (still
+  // running → chart extends it to "now" each minute). Absent → point event (dot).
+  duration?: number | null;
 }
 
 interface ChartResponse {
@@ -95,53 +100,32 @@ interface DashboardData {
 
 // --- Helpers ---
 
-function timeToMinutes(iso: string): number {
-  const d = new Date(iso);
-  return d.getHours() * 60 + d.getMinutes();
+// Add whole days to a "YYYY-MM-DD" string (UTC math, timezone-free).
+function addDays(day: string, n: number): string {
+  if (n === 0) return day;
+  return new Date(Date.parse(day + "T00:00:00Z") + n * 86_400_000).toISOString().slice(0, 10);
 }
 
-function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: false });
+// Backend now sends child-local wall-clock datetimes ("YYYY-MM-DD HH:MM:SS", no
+// timezone). These parse them by fixed position — no Intl, no timezone.
+function localDtToDay(dt: string): string {
+  return dt.slice(0, 10);
 }
 
-function getTodayInTz(timezone: string): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: timezone });
+function localDtToMinutes(dt: string): number {
+  return Number(dt.slice(11, 13)) * 60 + Number(dt.slice(14, 16));
 }
 
-function getCurrentMinutesInTz(timezone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-  }).formatToParts(new Date());
-  const hour = parseInt(parts.find((p) => p.type === "hour")!.value);
-  const minute = parseInt(parts.find((p) => p.type === "minute")!.value);
-  return hour * 60 + minute;
+// Day number since the epoch, from a "YYYY-MM-DD" string (parsed as UTC midnight,
+// so it never depends on the browser timezone).
+function dayIndex(day: string): number {
+  return Math.round(Date.parse(day + "T00:00:00Z") / 86_400_000);
 }
 
-function utcDtToLocalDate(utcDt: string, timezone: string): string {
-  const d = new Date(utcDt.replace(" ", "T") + "Z");
-  return d.toLocaleDateString("en-CA", { timeZone: timezone });
-}
-
-function utcDtToLocalMinutes(utcDt: string, timezone: string): number {
-  const d = new Date(utcDt.replace(" ", "T") + "Z");
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    hour: "numeric",
-    minute: "numeric",
-    hour12: false,
-  }).formatToParts(d);
-  const hour = parseInt(parts.find((p) => p.type === "hour")!.value);
-  const minute = parseInt(parts.find((p) => p.type === "minute")!.value);
-  return hour * 60 + minute;
-}
-
-function utcDtToLocalTimeStr(utcDt: string, timezone: string): string {
-  const d = new Date(utcDt.replace(" ", "T") + "Z");
-  return d.toLocaleTimeString([], { timeZone: timezone, hour: "2-digit", minute: "2-digit", hour12: false });
+// Position on the child's continuous local timeline, in minutes. Lets us compare
+// datetimes and "now" across midnight without any timezone math.
+function localOrd(dt: string): number {
+  return dayIndex(localDtToDay(dt)) * MINUTES_IN_DAY + localDtToMinutes(dt);
 }
 
 function formatDuration(minutes: number | undefined | null): string {
@@ -152,10 +136,6 @@ function formatDuration(minutes: number | undefined | null): string {
 }
 
 
-
-function minutesAgo(iso: string): number {
-  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
-}
 
 function colorForEventType(color: string | null): string {
   return color ? `#${color}` : "#000";
@@ -174,35 +154,32 @@ function minutesToTimeLabel(minutes: number): string {
 
 // --- CurrentStatus component (running current sleep / awake + prediction) ---
 
-function CurrentStatus({ data, predictions, timezone }: {
+function CurrentStatus({ data, predictions, nowMin, today }: {
   data: { is_currently_asleep: boolean; current_sleep_minutes: number; current_awake_minutes: number };
-  predictions?: PredictionSegment[]; timezone?: string | null;
+  predictions?: PredictionSegment[]; nowMin?: number | null; today?: string | null;
 }) {
   const { t } = useTranslation();
-  const nowMs = Date.now();
+  // "now" on the same child-local timeline as the predictions, from the status seed.
+  const nowOrd = (nowMin != null && today) ? dayIndex(today) * MINUTES_IN_DAY + nowMin : null;
 
-  const sleepPred = (predictions && timezone && data.is_currently_asleep)
+  const sleepPred = (predictions && nowOrd !== null && data.is_currently_asleep)
     ? predictions.find(p =>
         (p.segment_type === "day_sleep" || p.segment_type === "night_sleep") &&
-        new Date(p.start_dt.replace(" ", "T") + "Z").getTime() <= nowMs &&
-        new Date(p.end_dt.replace(" ", "T") + "Z").getTime() > nowMs
+        localOrd(p.start_dt) <= nowOrd &&
+        localOrd(p.end_dt) > nowOrd
       ) ?? null
     : null;
 
-  const awakePred = (predictions && timezone && !data.is_currently_asleep)
+  const awakePred = (predictions && nowOrd !== null && !data.is_currently_asleep)
     ? predictions.find(p =>
         p.segment_type === "day_awake" &&
-        new Date(p.start_dt.replace(" ", "T") + "Z").getTime() <= nowMs &&
-        new Date(p.end_dt.replace(" ", "T") + "Z").getTime() > nowMs
+        localOrd(p.start_dt) <= nowOrd &&
+        localOrd(p.end_dt) > nowOrd
       ) ?? null
     : null;
 
-  const sleepMinsLeft = sleepPred
-    ? Math.round((new Date(sleepPred.end_dt.replace(" ", "T") + "Z").getTime() - nowMs) / 60_000)
-    : null;
-  const awakeMinsLeft = awakePred
-    ? Math.round((new Date(awakePred.end_dt.replace(" ", "T") + "Z").getTime() - nowMs) / 60_000)
-    : null;
+  const sleepMinsLeft = sleepPred ? localOrd(sleepPred.end_dt) - nowOrd! : null;
+  const awakeMinsLeft = awakePred ? localOrd(awakePred.end_dt) - nowOrd! : null;
 
   if (data.current_sleep_minutes <= 0 && data.current_awake_minutes <= 0) return null;
 
@@ -211,9 +188,9 @@ function CurrentStatus({ data, predictions, timezone }: {
       {data.is_currently_asleep && data.current_sleep_minutes > 0 && (
         <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
           {t("chart.currentSleep")} {formatDuration(data.current_sleep_minutes)}
-          {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && timezone && (
+          {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && (
             <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
-              (~{utcDtToLocalTimeStr(sleepPred.end_dt, timezone)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
+              (~{sleepPred.end_dt.slice(11, 16)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
             </span>
           )}
         </div>
@@ -221,9 +198,9 @@ function CurrentStatus({ data, predictions, timezone }: {
       {!data.is_currently_asleep && data.current_awake_minutes > 0 && (
         <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
           {t("chart.currentAwake")} {formatDuration(data.current_awake_minutes)}
-          {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && timezone && (
+          {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && (
             <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
-              (~{utcDtToLocalTimeStr(awakePred.end_dt, timezone)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
+              (~{awakePred.end_dt.slice(11, 16)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
             </span>
           )}
         </div>
@@ -239,7 +216,7 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
 }) {
   const { t } = useTranslation();
   const wakeUpSource = data.morning_awake_time;
-  const wakeUpFormatted = wakeUpSource ? formatTime(wakeUpSource) : null;
+  const wakeUpFormatted = wakeUpSource;
   const currentSeg = live ? data.segments.find((s) => s.is_current) ?? null : null;
 
   // Live minute counting between the once-a-minute refetches (which fire only on
@@ -274,18 +251,18 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
 
       {data.bedtime && (
         <div style={{ marginBottom: 8, borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
-          {t("chart.bedtime")} {formatTime(data.bedtime)}
+          {t("chart.bedtime")} {data.bedtime}
         </div>
       )}
 
-      {currentSeg && (currentSeg.state === "sleep" ? !data.bedtime : formatTime(currentSeg.start) !== wakeUpFormatted) && (
+      {currentSeg && (currentSeg.state === "sleep" ? !data.bedtime : currentSeg.start !== wakeUpFormatted) && (
         currentSeg.state === "sleep" ? (
           <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)" }}>
-            {t("chart.fellAsleep")} {formatTime(currentSeg.start)}
+            {t("chart.fellAsleep")} {currentSeg.start}
           </div>
         ) : (
           <div style={{ marginTop: 5, marginBottom: 5 }}>
-            {t("chart.wokeUp")} {formatTime(currentSeg.start)}
+            {t("chart.wokeUp")} {currentSeg.start}
           </div>
         )
       )}
@@ -297,7 +274,7 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
         if (seg.state === "sleep" && seg.day_part === "day" && !seg.is_current) {
           return (
             <div key={i} style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)" }}>
-              &nbsp;#{seg.nap_number} &nbsp; {formatTime(seg.start)}–{formatTime(seg.end)} &nbsp; {formatDuration(seg.minutes)}
+              &nbsp;#{seg.nap_number} &nbsp; {seg.start}–{seg.end} &nbsp; {formatDuration(seg.minutes)}
             </div>
           );
         }
@@ -336,8 +313,6 @@ function getLast15Days(anchor?: string): { dateFrom: string; dateTo: string } {
   return { dateFrom: toDateString(from), dateTo: toDateString(today) };
 }
 
-const SLEEP_EVENT_NAMES = ["sleep_start", "sleep_end"];
-
 export default function ChartPage() {
   const { t } = useTranslation();
   const monthNames = t("common.months").split("_");
@@ -352,13 +327,6 @@ export default function ChartPage() {
   const [error, setError] = useState("");
   const eventTypes = useEventTypesStore((s) => s.eventTypes);
   const loadEventTypes = useEventTypesStore((s) => s.load);
-  const sleepEventTypeIds = useMemo(
-    () =>
-      SLEEP_EVENT_NAMES.map((name) => eventTypes.find((et) => et.name === name)?.id).filter(
-        (id): id is number => id !== undefined,
-      ),
-    [eventTypes],
-  );
   const [selectedAdditionalIds, setSelectedAdditionalIds] = useState<number[]>([]);
   const [additionalData, setAdditionalData] = useState<Record<string, AdditionalEvent[]>>({});
   const chartRef = useRef<HTMLDivElement>(null);
@@ -369,13 +337,22 @@ export default function ChartPage() {
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
   const firstChildId = children[0]?.id;
-  const timezone = children[0]?.timezone;
-  const todayInTz = timezone ? getTodayInTz(timezone) : null;
-  const currentMinutes = timezone ? getCurrentMinutesInTz(timezone) : null;
-  const status = useStatus(firstChildId);
+  const { status, fetchedAt: statusFetchedAt } = useStatus(firstChildId);
+
+  // "now" in the child's local frame, seeded by /api/v2/status (current_min/today)
+  // and advanced locally between polls by the minute heartbeat below. No timezone.
+  let currentMinutes: number | null = null;
+  let todayInTz: string | null = null;
+  if (status && typeof status.current_min === "number") {
+    const elapsed = todayParam ? 0 : Math.max(0, Math.floor((Date.now() - statusFetchedAt) / 60_000));
+    const raw = status.current_min + elapsed;
+    currentMinutes = raw % MINUTES_IN_DAY;
+    todayInTz = addDays(status.today, Math.floor(raw / MINUTES_IN_DAY));
+  }
+  const nowOrd = currentMinutes !== null && todayInTz ? dayIndex(todayInTz) * MINUTES_IN_DAY + currentMinutes : null;
 
   // Local once-a-minute heartbeat: forces a re-render so the render-time "now"
-  // values (currentMinutes / todayInTz / minutesAgo) advance — the "now" line,
+  // values (currentMinutes / todayInTz / nowOrd) advance — the "now" line,
   // the "X ago" labels and the growing current-sleep bar. Costs no network.
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -405,7 +382,7 @@ export default function ChartPage() {
 
   function fetchPredictions() {
     if (!firstChildId || !predictEnabled) return;
-    const url = new URL("/api/chart/sleep-predict", window.location.origin);
+    const url = new URL("/api/v2/sleep-predict", window.location.origin);
     url.searchParams.set("child_id", String(firstChildId));
     authedFetch(url.toString())
       .then((r) => r.json())
@@ -428,11 +405,10 @@ export default function ChartPage() {
 
   async function loadChart(childId: number, from: string, to: string, additionalIds: number[] = []) {
     setError("");
-    const url = new URL("/api/chart/", window.location.origin);
+    const url = new URL("/api/v2/chart", window.location.origin);
     url.searchParams.set("child_id", String(childId));
     url.searchParams.set("date_from", from);
     url.searchParams.set("date_to", to);
-    sleepEventTypeIds.forEach((id) => url.searchParams.append("event_type_ids", String(id)));
     additionalIds.forEach((id) => url.searchParams.append("additional_data_ids", String(id)));
     try {
       const r = await authedFetch(url.toString());
@@ -446,9 +422,9 @@ export default function ChartPage() {
   }
 
   useEffect(() => {
-    if (!firstChildId || sleepEventTypeIds.length === 0) return;
+    if (!firstChildId) return;
     loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds);
-  }, [firstChildId, todayParam, selectedAdditionalIds, sleepEventTypeIds]);
+  }, [firstChildId, todayParam, selectedAdditionalIds]);
 
   // Steady-state trigger: when useStatus reports a sleep-status flip, refresh the
   // heavy data once. Completed segments, dashboard totals and predictions change
@@ -460,9 +436,7 @@ export default function ChartPage() {
     if (prevAsleep.current !== null && prevAsleep.current !== cur) {
       fetchDashboard();
       fetchPredictions();
-      if (sleepEventTypeIds.length > 0) {
-        loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds);
-      }
+      loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds);
     }
     prevAsleep.current = cur;
   }, [status?.is_currently_asleep]);
@@ -499,12 +473,12 @@ export default function ChartPage() {
         <div className="status-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap", margin: "12px 0" }}>
           <div className="last-events" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
             {status && !todayParam && (
-              <CurrentStatus data={status} predictions={predictEnabled ? predictions : undefined} timezone={timezone} />
+              <CurrentStatus data={status} predictions={predictEnabled ? predictions : undefined} nowMin={currentMinutes} today={todayInTz} />
             )}
             {visibleLastEvents.map((ev, i) => (
               <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
                 <span style={{ fontWeight: 500 }}>{t(`et.${ev.name}`, ev.name)}</span>
-                <span style={{ color: "var(--muted)" }}>{formatDuration(minutesAgo(ev.occurred_at))} ago</span>
+                <span style={{ color: "var(--muted)" }}>{formatDuration(nowOrd !== null ? Math.max(0, nowOrd - localOrd(ev.occurred_at)) : 0)} ago</span>
                 {ev.volume != null && <span style={{ color: "var(--muted2)" }}>{ev.volume} ml</span>}
                 {ev.description && <span style={{ color: "var(--muted2)" }}>{ev.description}</span>}
               </div>
@@ -666,21 +640,23 @@ export default function ChartPage() {
                   );
                 })()}
                 {segments.map((seg, i) => {
-                  const startMin = timeToMinutes(seg.start);
-                  const endMinRaw = timeToMinutes(seg.end);
-                  let duration = endMinRaw - startMin;
-                  let endMin = endMinRaw === 0 ? MINUTES_IN_DAY : endMinRaw;
+                  const startMin = localDtToMinutes(seg.start);
+                  // end === null → the current unfinished sleep: grow it to "now".
                   let current = false;
-                  if (day === todayInTz && currentMinutes !== null && endMin > currentMinutes) {
-                    endMin = currentMinutes;
-                    duration = currentMinutes - startMin;
+                  let endMin: number;
+                  if (seg.end === null) {
                     current = true;
+                    endMin = currentMinutes ?? startMin;
+                  } else {
+                    const endMinRaw = localDtToMinutes(seg.end);
+                    endMin = endMinRaw === 0 ? MINUTES_IN_DAY : endMinRaw;
                   }
+                  const duration = endMin - startMin;
                   const left = (startMin / MINUTES_IN_DAY) * 100;
                   const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
                   const titleText = current
-                      ? `${formatDuration(duration)} | ${formatTime(seg.start)} – `
-                      : `${formatDuration(duration)} | ${formatTime(seg.start)} – ${formatTime(seg.end)}`;
+                      ? `${formatDuration(duration)} | ${minutesToTimeLabel(startMin)} – `
+                      : `${formatDuration(duration)} | ${minutesToTimeLabel(startMin)} – ${minutesToTimeLabel(endMin)}`;
                   return (
                     <div
                       key={i}
@@ -695,18 +671,18 @@ export default function ChartPage() {
                     />
                   );
                 })}
-                {predictEnabled && day === todayInTz && timezone && predictions
+                {predictEnabled && day === todayInTz && predictions
                   .filter((p) => p.segment_type !== "day_awake")
                   .filter((p) => {
-                    const sd = utcDtToLocalDate(p.start_dt, timezone);
-                    const ed = utcDtToLocalDate(p.end_dt, timezone);
+                    const sd = localDtToDay(p.start_dt);
+                    const ed = localDtToDay(p.end_dt);
                     return sd <= todayInTz! && ed >= todayInTz!;
                   })
                   .map((p, i) => {
-                    const sd = utcDtToLocalDate(p.start_dt, timezone);
-                    const ed = utcDtToLocalDate(p.end_dt, timezone);
-                    const startMin = sd === todayInTz ? utcDtToLocalMinutes(p.start_dt, timezone) : 0;
-                    const endMin = ed === todayInTz ? utcDtToLocalMinutes(p.end_dt, timezone) : MINUTES_IN_DAY;
+                    const sd = localDtToDay(p.start_dt);
+                    const ed = localDtToDay(p.end_dt);
+                    const startMin = sd === todayInTz ? localDtToMinutes(p.start_dt) : 0;
+                    const endMin = ed === todayInTz ? localDtToMinutes(p.end_dt) : MINUTES_IN_DAY;
                     const duration = endMin - startMin;
                     const left = (startMin / MINUTES_IN_DAY) * 100;
                     const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
@@ -725,18 +701,18 @@ export default function ChartPage() {
                     );
                   })
                 }
-                {predictEnabled && day === todayInTz && timezone && currentMinutes !== null && status?.is_currently_asleep && (() => {
+                {predictEnabled && day === todayInTz && currentMinutes !== null && status?.is_currently_asleep && (() => {
                   const overlapPred = predictions.find((p) => {
                     if (p.segment_type !== "day_awake") return false;
-                    const sd = utcDtToLocalDate(p.start_dt, timezone!);
-                    const ed = utcDtToLocalDate(p.end_dt, timezone!);
-                    const startMin = sd === todayInTz ? utcDtToLocalMinutes(p.start_dt, timezone!) : 0;
-                    const endMin = ed === todayInTz ? utcDtToLocalMinutes(p.end_dt, timezone!) : MINUTES_IN_DAY;
+                    const sd = localDtToDay(p.start_dt);
+                    const ed = localDtToDay(p.end_dt);
+                    const startMin = sd === todayInTz ? localDtToMinutes(p.start_dt) : 0;
+                    const endMin = ed === todayInTz ? localDtToMinutes(p.end_dt) : MINUTES_IN_DAY;
                     return startMin <= currentMinutes! && endMin > currentMinutes!;
                   });
                   if (!overlapPred) return null;
-                  const ed = utcDtToLocalDate(overlapPred.end_dt, timezone!);
-                  const endMin = ed === todayInTz ? utcDtToLocalMinutes(overlapPred.end_dt, timezone!) : MINUTES_IN_DAY;
+                  const ed = localDtToDay(overlapPred.end_dt);
+                  const endMin = ed === todayInTz ? localDtToMinutes(overlapPred.end_dt) : MINUTES_IN_DAY;
                   const width = ((endMin - currentMinutes!) / MINUTES_IN_DAY) * 100;
                   if (width <= 0) return null;
                   return (
@@ -760,12 +736,39 @@ export default function ChartPage() {
                   return events
                     .filter((ev) => ev.occurred_at.startsWith(day))
                     .map((ev) => {
-                      const minutes = timeToMinutes(ev.occurred_at);
-                      const left = (minutes / MINUTES_IN_DAY) * 100;
+                      const startMin = localDtToMinutes(ev.occurred_at);
+                      const parts: string[] = [];
+                      if (ev.description) parts.push(ev.description);
+                      if (ev.volume != null) parts.push(String(ev.volume));
+                      const title = parts.length ? parts.join(" · ") : minutesToTimeLabel(startMin);
+                      const left = (startMin / MINUTES_IN_DAY) * 100;
+                      // A `duration` field (number or null) marks a span → draw a line;
+                      // null means the event is still running, so grow it to "now".
+                      if (ev.duration !== undefined) {
+                        const endMin = ev.duration === null ? (currentMinutes ?? startMin) : startMin + ev.duration;
+                        const width = Math.max(0, ((Math.min(endMin, MINUTES_IN_DAY) - startMin) / MINUTES_IN_DAY) * 100);
+                        return (
+                          <div
+                            key={ev.id}
+                            title={title}
+                            style={{
+                              position: "absolute",
+                              left: `${left}%`,
+                              width: `${width}%`,
+                              top: "50%",
+                              transform: "translateY(-50%)",
+                              height: 4,
+                              borderRadius: 2,
+                              background: color,
+                              zIndex: 3,
+                            }}
+                          />
+                        );
+                      }
                       return (
                         <div
                           key={ev.id}
-                          title={ev.description ?? formatTime(ev.occurred_at)}
+                          title={title}
                           style={{
                             position: "absolute",
                             left: `${left}%`,
