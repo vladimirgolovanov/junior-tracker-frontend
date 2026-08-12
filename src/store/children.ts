@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { authedFetch } from "../api/client";
+import { loadList } from "./loadList";
 
 export interface Child {
   id: number;
@@ -7,8 +7,7 @@ export interface Child {
   timezone?: string;
 }
 
-// module-level flag — synchronous, immune to React render batching
-let isFetching = false;
+const flag = { fetching: false };
 
 interface ChildrenState {
   children: Child[];
@@ -21,20 +20,11 @@ export const useChildrenStore = create<ChildrenState>((set, get) => ({
   children: [],
   loaded: false,
   load: () => {
-    if (get().loaded || isFetching) return;
-    isFetching = true;
-    authedFetch("/api/children/")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          set({ children: data, loaded: true });
-        }
-      })
-      .catch(() => {})
-      .finally(() => { isFetching = false; });
+    if (get().loaded) return;
+    loadList<Child>("/api/children/", flag, (children) => set({ children, loaded: true }));
   },
   reset: () => {
-    isFetching = false;
+    flag.fetching = false;
     set({ children: [], loaded: false });
   },
 }));

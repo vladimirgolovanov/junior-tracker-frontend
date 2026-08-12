@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { authedFetch } from "../api/client";
+import { loadList } from "./loadList";
 
 export interface EventType {
   id: number;
@@ -13,7 +13,7 @@ export interface EventType {
   describe_input: boolean;
 }
 
-let isFetching = false;
+const flag = { fetching: false };
 
 interface EventTypesState {
   eventTypes: EventType[];
@@ -26,22 +26,13 @@ export const useEventTypesStore = create<EventTypesState>((set, get) => ({
   eventTypes: [],
   loadedForChildId: null,
   load: (childId: number) => {
-    if (get().loadedForChildId === childId || isFetching) return;
-    isFetching = true;
+    if (get().loadedForChildId === childId) return;
     const url = new URL("/api/event_types/", window.location.origin);
     url.searchParams.set("child_id", String(childId));
-    authedFetch(url.toString())
-      .then((r) => r.json())
-      .then((data: EventType[]) => {
-        if (Array.isArray(data)) {
-          set({ eventTypes: data, loadedForChildId: childId });
-        }
-      })
-      .catch(() => {})
-      .finally(() => { isFetching = false; });
+    loadList<EventType>(url.toString(), flag, (eventTypes) => set({ eventTypes, loadedForChildId: childId }));
   },
   reset: () => {
-    isFetching = false;
+    flag.fetching = false;
     set({ eventTypes: [], loadedForChildId: null });
   },
 }));

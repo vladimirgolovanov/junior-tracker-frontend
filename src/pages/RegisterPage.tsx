@@ -3,8 +3,8 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
 
-// The register endpoint lives on the separate v2 backend (proxied /api/v2 -> :8001),
-// which isn't part of the generated openapi-fetch schema, so we call it via fetch().
+// The register endpoint is unauthenticated (no token yet) and lives on the v2
+// backend (proxied /api/v2 -> :8001), so we call it with a plain fetch().
 const API_BASE = import.meta.env.VITE_API_BASE ?? "";
 
 type Mode = "create" | "join";

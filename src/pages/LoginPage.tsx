@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import client from "../api/client";
+import { authedFetch } from "../api/client";
 import { useAuthStore } from "../store/auth";
 
 export default function LoginPage() {
@@ -14,29 +14,26 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
     const fd = new FormData(e.currentTarget);
-
-    const { data, error: err } = await client.POST("/auth/login", {
-      body: {
-        username: fd.get("username") as string,
-        password: fd.get("password") as string,
-        scope: "",
-      },
-      bodySerializer: (body) => {
-        const params = new URLSearchParams();
-        for (const [k, v] of Object.entries(body as Record<string, string>)) {
-          params.set(k, v);
-        }
-        return params.toString();
-      },
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    const body = new URLSearchParams({
+      username: fd.get("username") as string,
+      password: fd.get("password") as string,
+      scope: "",
     });
 
-    if (err) {
-      setError(typeof err.detail === "string" ? err.detail : t("login.failed"));
+    const r = await authedFetch("/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+
+    if (!r.ok) {
+      const detail = await r.json().then((b) => b?.detail).catch(() => undefined);
+      setError(typeof detail === "string" ? detail : t("login.failed"));
       return;
     }
 
-    setToken(data.access_token);
+    const { access_token } = await r.json();
+    setToken(access_token);
     navigate("/events");
   }
 

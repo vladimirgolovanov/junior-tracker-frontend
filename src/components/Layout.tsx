@@ -3,7 +3,7 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
 import { useThemeStore } from "../store/theme";
-import client from "../api/client";
+import { authedFetch } from "../api/client";
 import useChildren from "../hooks/useChildren";
 
 const navBtnStyle: React.CSSProperties = {
@@ -89,7 +89,7 @@ export default function Layout() {
   }, [menuOpen]);
 
   async function handleLogout() {
-    await client.POST("/auth/logout");
+    await authedFetch("/auth/logout", { method: "POST" });
     logout();
     navigate("/login");
   }

@@ -48,8 +48,10 @@ export default function useStatus(
   useEffect(() => {
     if (!childId) return;
     let cancelled = false;
+    let lastFetch = 0;
 
     function fetchStatus() {
+      lastFetch = Date.now();
       const url = new URL("/api/v2/status", window.location.origin);
       url.searchParams.set("child_id", String(childId));
       authedFetch(url.toString())
@@ -65,9 +67,24 @@ export default function useStatus(
 
     fetchStatus();
     const id = setInterval(fetchStatus, 60_000);
+
+    // Background tabs (esp. iOS Safari) freeze the interval, so re-poll as soon as
+    // the tab becomes visible again — otherwise the first seconds show a stale
+    // status. The 5s guard dedups near-simultaneous visibility/pageshow triggers
+    // and avoids piling onto a poll that just landed.
+    function onVisible() {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastFetch < 5_000) return;
+      fetchStatus();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("pageshow", onVisible); // iOS bfcache restore
+
     return () => {
       cancelled = true;
       clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("pageshow", onVisible);
     };
   }, [childId, token]);
 
