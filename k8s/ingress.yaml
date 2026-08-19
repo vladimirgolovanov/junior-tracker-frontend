@@ -38,6 +38,13 @@ spec:
                 name: junior-tracker-api
                 port:
                   number: 80
+          - path: /delete-account
+            pathType: Prefix
+            backend:
+              service:
+                name: junior-tracker-backend
+                port:
+                  number: 50087
           - path: /mcp
             pathType: Prefix
             backend:
