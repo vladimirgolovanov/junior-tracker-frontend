@@ -479,3 +479,104 @@ th, td {
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
 }
+
+/* Auth pages (login / register): same surface + radius language as the dashboard */
+.auth-page {
+  max-width: 360px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-page h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted2);
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field-label {
+  font-size: 13px;
+  color: var(--muted2);
+}
+
+.auth-field input,
+.auth-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.auth-field input:focus,
+.auth-field select:focus {
+  outline: none;
+  border-color: var(--text);
+}
+
+.auth-form .btn {
+  width: 100%;
+  padding: 12px 20px;
+}
+
+.auth-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: #d33;
+  font-size: 14px;
+}
+
+.auth-alt {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted2);
+  text-align: center;
+}
+
+/* Segmented control stretches to the form width when used as an auth field */
+.auth-form .seg {
+  display: flex;
+}
+
+.auth-form .seg-btn {
+  flex: 1;
+}
+
+.auth-error-list {
+  margin: 0;
+  padding: 8px 10px 8px 26px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: #d33;
+  font-size: 14px;
+}
+
+.auth-note {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted2);
+  font-size: 14px;
+}

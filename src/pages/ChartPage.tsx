@@ -187,20 +187,20 @@ function CurrentStatus({ data, predictions, nowMin, today }: {
     <>
       {data.is_currently_asleep && data.current_sleep_minutes > 0 && (
         <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
-          {t("chart.currentSleep")} {formatDuration(data.current_sleep_minutes)}
+          {t("chart_currentSleep")} {formatDuration(data.current_sleep_minutes)}
           {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && (
             <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
-              (~{sleepPred.end_dt.slice(11, 16)}, {t("chart.in")} {formatDuration(sleepMinsLeft)})
+              (~{sleepPred.end_dt.slice(11, 16)}, {t("chart_in")} {formatDuration(sleepMinsLeft)})
             </span>
           )}
         </div>
       )}
       {!data.is_currently_asleep && data.current_awake_minutes > 0 && (
         <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
-          {t("chart.currentAwake")} {formatDuration(data.current_awake_minutes)}
+          {t("chart_currentAwake")} {formatDuration(data.current_awake_minutes)}
           {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && (
             <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
-              (~{awakePred.end_dt.slice(11, 16)}, {t("chart.in")} {formatDuration(awakeMinsLeft)})
+              (~{awakePred.end_dt.slice(11, 16)}, {t("chart_in")} {formatDuration(awakeMinsLeft)})
             </span>
           )}
         </div>
@@ -240,7 +240,7 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
     return (
       <div>
         <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
-        <div style={{ color: "var(--muted)" }}>{t("chart.noData")}</div>
+        <div style={{ color: "var(--muted)" }}>{t("chart_noData")}</div>
       </div>
     );
   }
@@ -251,25 +251,25 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
 
       {data.bedtime && (
         <div style={{ marginBottom: 8, borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
-          {t("chart.bedtime")} {data.bedtime}
+          {t("chart_bedtime")} {data.bedtime}
         </div>
       )}
 
       {currentSeg && (currentSeg.state === "sleep" ? !data.bedtime : currentSeg.start !== wakeUpFormatted) && (
         currentSeg.state === "sleep" ? (
           <div style={{ marginTop: "5px", marginBottom: "5px", maxWidth: "220px", background: "var(--surface2)" }}>
-            {t("chart.fellAsleep")} {currentSeg.start}
+            {t("chart_fellAsleep")} {currentSeg.start}
           </div>
         ) : (
           <div style={{ marginTop: 5, marginBottom: 5 }}>
-            {t("chart.wokeUp")} {currentSeg.start}
+            {t("chart_wokeUp")} {currentSeg.start}
           </div>
         )
       )}
 
       {data.segments.map((seg, i) => {
         if (seg.state === "awake" && !seg.is_current) {
-          return <div key={i}>{t("chart.awake")} {formatDuration(seg.minutes)}</div>;
+          return <div key={i}>{t("chart_awake")} {formatDuration(seg.minutes)}</div>;
         }
         if (seg.state === "sleep" && seg.day_part === "day" && !seg.is_current) {
           return (
@@ -283,17 +283,17 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
 
       {wakeUpFormatted != null && (
         <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-          {t("chart.wakeUp")} {wakeUpFormatted}
+          {t("chart_wakeUp")} {wakeUpFormatted}
         </div>
       )}
 
       <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8 }}>
-        <div>{t("chart.totalSleep")} {formatDuration(totalSleep)}</div>
-        <div>{t("chart.nightSleep")} {formatDuration(nightSleep)}</div>
-        <div>{t("chart.daySleep")} {formatDuration(daySleep)}</div>
-        <div>{t("chart.awake")} {formatDuration(totalAwake)}</div>
+        <div>{t("chart_totalSleep")} {formatDuration(totalSleep)}</div>
+        <div>{t("chart_nightSleep")} {formatDuration(nightSleep)}</div>
+        <div>{t("chart_daySleep")} {formatDuration(daySleep)}</div>
+        <div>{t("chart_awake")} {formatDuration(totalAwake)}</div>
         {data.cycle_length_minutes != null && (
-          <div>{t("chart.cycle")} {formatDuration(cycle)}</div>
+          <div>{t("chart_cycle")} {formatDuration(cycle)}</div>
         )}
       </div>
     </div>
@@ -315,7 +315,7 @@ function getLast15Days(anchor?: string): { dateFrom: string; dateTo: string } {
 
 export default function ChartPage() {
   const { t } = useTranslation();
-  const monthNames = t("common.months").split("_");
+  const monthNames = t("common_months").split("_");
   const [searchParams] = useSearchParams();
   const todayParam = searchParams.get("today") ?? undefined;
   const predictEnabled = searchParams.get("predict") !== "0";
@@ -412,12 +412,12 @@ export default function ChartPage() {
     additionalIds.forEach((id) => url.searchParams.append("additional_data_ids", String(id)));
     try {
       const r = await authedFetch(url.toString());
-      if (!r.ok) { setError(t("chart.loadFailed")); return; }
+      if (!r.ok) { setError(t("chart_loadFailed")); return; }
       const data: ChartResponse = await r.json();
       setRows(data.sleep_data ?? []);
       setAdditionalData(data.additional_data ?? {});
     } catch {
-      setError(t("chart.loadFailed"));
+      setError(t("chart_loadFailed"));
     }
   }
 
@@ -477,7 +477,7 @@ export default function ChartPage() {
             )}
             {visibleLastEvents.map((ev, i) => (
               <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
-                <span style={{ fontWeight: 500 }}>{t(`et.${ev.name}`, ev.name)}</span>
+                <span style={{ fontWeight: 500 }}>{t(`et_${ev.name}`, ev.name)}</span>
                 <span style={{ color: "var(--muted)" }}>{formatDuration(nowOrd !== null ? Math.max(0, nowOrd - localOrd(ev.occurred_at)) : 0)} ago</span>
                 {ev.volume != null && <span style={{ color: "var(--muted2)" }}>{ev.volume} ml</span>}
                 {ev.description && <span style={{ color: "var(--muted2)" }}>{ev.description}</span>}
@@ -485,7 +485,7 @@ export default function ChartPage() {
             ))}
             {visibleLastEvents.length === 0 && (
               <div style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", color: "var(--muted)" }}>
-                {t("chart.noData")}
+                {t("chart_noData")}
               </div>
             )}
           </div>
@@ -503,12 +503,12 @@ export default function ChartPage() {
                     : undefined;
                 return (
                   <Link key={qa.event_type_id} className={`qa-btn qa-${et.name}`} to={`/add-event?type=${et.id}${focusQuery}`} onClick={prime}>
-                    {t(`et.${et.name}`, et.name)}
+                    {t(`et_${et.name}`, et.name)}
                   </Link>
                 );
               })}
               <Link className="qa-btn qa-add-event" to="/add-event">
-                {t("nav.addEvent")}
+                {t("nav_addEvent")}
               </Link>
             </div>
           )}
@@ -517,9 +517,9 @@ export default function ChartPage() {
 
       {dashboard && (
         <div className="dashboard-columns">
-          <div className="dashboard-col"><DayColumn title={t("chart.today")} data={dashboard.today} live={!todayParam} fetchedAtMs={dashboardFetchedAt.current} /></div>
-          <div className="dashboard-col"><DayColumn title={t("chart.yesterday")} data={dashboard.yesterday} /></div>
-          <div className="dashboard-col"><DayColumn title={t("chart.dayBefore")} data={dashboard.day_before_yesterday} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart_today")} data={dashboard.today} live={!todayParam} fetchedAtMs={dashboardFetchedAt.current} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart_yesterday")} data={dashboard.yesterday} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart_dayBefore")} data={dashboard.day_before_yesterday} /></div>
         </div>
       )}
 
@@ -527,7 +527,7 @@ export default function ChartPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <label style={{ display: "none" }}>
-          {t("chart.child")}{" "}
+          {t("chart_child")}{" "}
           <select name="child_id" required>
             {children.map((c) => (
               <option key={c.id} value={c.id}>{c.name}</option>
@@ -535,12 +535,12 @@ export default function ChartPage() {
           </select>
         </label>
         <label>
-          {t("chart.dateFrom")} <input name="date_from" type="date" defaultValue={dateFrom} required />
+          {t("chart_dateFrom")} <input name="date_from" type="date" defaultValue={dateFrom} required />
         </label>
         <label>
-          {t("chart.dateTo")} <input name="date_to" type="date" defaultValue={dateTo} required />
+          {t("chart_dateTo")} <input name="date_to" type="date" defaultValue={dateTo} required />
         </label>
-        <button type="submit">{t("chart.load")}</button>
+        <button type="submit">{t("chart_load")}</button>
       </form>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         {eventTypes
@@ -848,7 +848,7 @@ export default function ChartPage() {
       )}
 
       {byDay.size === 0 && !error && (
-        <div style={{ marginTop: 16, color: "var(--muted)" }}>{t("chart.noData")}</div>
+        <div style={{ marginTop: 16, color: "var(--muted)" }}>{t("chart_noData")}</div>
       )}
     </div>
   );

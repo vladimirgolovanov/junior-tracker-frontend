@@ -50,13 +50,13 @@ export default function InvitePage() {
       });
       if (!r.ok) {
         const body = await r.json().catch(() => ({}));
-        setError(body?.detail ?? t("invite.errorStatus", { status: r.status }));
+        setError(body?.detail ?? t("invite_errorStatus", { status: r.status }));
         return;
       }
       const data: Invite = await r.json();
       setInvite(data);
     } catch {
-      setError(t("invite.networkError"));
+      setError(t("invite_networkError"));
     } finally {
       setLoading(false);
     }
@@ -75,15 +75,15 @@ export default function InvitePage() {
   if (children.length === 0) {
     return (
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px" }}>
-        <h2>{t("invite.title")}</h2>
-        <p>{t("invite.noChildren")}</p>
+        <h2>{t("invite_title")}</h2>
+        <p>{t("invite_noChildren")}</p>
       </div>
     );
   }
 
   return (
     <div style={{ maxWidth: 600, margin: "0 auto", padding: "16px" }}>
-      <h2>{t("invite.title")}</h2>
+      <h2>{t("invite_title")}</h2>
 
       {children.length > 1 && (
         <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
@@ -100,7 +100,7 @@ export default function InvitePage() {
         </div>
       )}
 
-      <p style={{ color: "var(--muted)" }}>{t("invite.hint")}</p>
+      <p style={{ color: "var(--muted)" }}>{t("invite_hint")}</p>
 
       <button
         type="button"
@@ -108,14 +108,14 @@ export default function InvitePage() {
         onClick={createInvite}
         disabled={loading || selectedChildId === null}
       >
-        {loading ? t("invite.creating") : t("invite.create")}
+        {loading ? t("invite_creating") : t("invite_create")}
       </button>
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {invite && (
         <section style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {t("invite.linkLabel")}
+            {t("invite_linkLabel")}
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 readOnly
@@ -124,15 +124,15 @@ export default function InvitePage() {
                 style={{ flex: 1 }}
               />
               <button type="button" onClick={copyLink}>
-                {copied ? t("invite.copied") : t("invite.copy")}
+                {copied ? t("invite_copied") : t("invite_copy")}
               </button>
             </div>
           </label>
           <div>
-            {t("invite.code")}: <code>{invite.code}</code>
+            {t("invite_code")}: <code>{invite.code}</code>
           </div>
           <div style={{ color: "var(--muted)", fontSize: 13 }}>
-            {t("invite.expiresAt", { when: new Date(invite.expires_at).toLocaleString() })}
+            {t("invite_expiresAt", { when: new Date(invite.expires_at).toLocaleString() })}
           </div>
         </section>
       )}

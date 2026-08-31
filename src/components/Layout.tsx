@@ -94,66 +94,64 @@ export default function Layout() {
     navigate("/login");
   }
 
+  // The header keeps the same shape signed in or out (logo left, hamburger right);
+  // only the drawer's contents differ.
   return (
     <div>
       <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-        {token ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Link to="/chart" className="logo">{t("nav.appName")}</Link>
-            </div>
-            <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link to={token ? "/chart" : "/login"} className="logo">{t("nav_appName")}</Link>
+        </div>
+        <div>
+          <button
+            type="button"
+            className="hamburger"
+            onClick={() => setMenuOpen(true)}
+            aria-label="Menu"
+            aria-expanded={menuOpen}
+          >
+            <i className="fa-solid fa-bars" />
+          </button>
+          <div
+            className={`drawer-backdrop${menuOpen ? " open" : ""}`}
+            onClick={closeMenu}
+          />
+          <aside className={`drawer${menuOpen ? " open" : ""}`}>
+            <div className="drawer-header">
               <button
                 type="button"
-                className="hamburger"
-                onClick={() => setMenuOpen(true)}
-                aria-label="Menu"
-                aria-expanded={menuOpen}
-              >
-                <i className="fa-solid fa-bars" />
-              </button>
-              <div
-                className={`drawer-backdrop${menuOpen ? " open" : ""}`}
+                className="drawer-close"
                 onClick={closeMenu}
-              />
-              <aside className={`drawer${menuOpen ? " open" : ""}`}>
-                <div className="drawer-header">
-                  <button
-                    type="button"
-                    className="drawer-close"
-                    onClick={closeMenu}
-                    aria-label="Close"
-                  >
-                    <i className="fa-solid fa-xmark" />
-                  </button>
-                </div>
-                <nav className="drawer-nav">
-                  <Link to="/stats" onClick={closeMenu}>{t("nav.stats")}</Link>
-                  <Link to="/invite" onClick={closeMenu}>{t("nav.invite")}</Link>
-                  <Link to="/child-settings" onClick={closeMenu}>{t("nav.settings")}</Link>
-                </nav>
-                <div className="drawer-footer">
-                  <LangToggle />
-                  <ThemeToggle />
-                  <button type="button" style={navBtnStyle} onClick={() => { handleLogout(); closeMenu(); }}>
-                    {t("nav.logout")}
-                  </button>
-                </div>
-              </aside>
+                aria-label="Close"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
             </div>
-          </>
-        ) : (
-          <>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <Link to="/login">{t("nav.login")}</Link> | <Link to="/register">{t("nav.register")}</Link>
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <nav className="drawer-nav">
+              {token ? (
+                <>
+                  <Link to="/stats" onClick={closeMenu}>{t("nav_stats")}</Link>
+                  <Link to="/invite" onClick={closeMenu}>{t("nav_invite")}</Link>
+                  <Link to="/child-settings" onClick={closeMenu}>{t("nav_settings")}</Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={closeMenu}>{t("nav_login")}</Link>
+                  <Link to="/register" onClick={closeMenu}>{t("nav_register")}</Link>
+                </>
+              )}
+            </nav>
+            <div className="drawer-footer">
               <LangToggle />
-              <span style={{ fontSize: "0.85em" }}>|</span>
               <ThemeToggle />
+              {token && (
+                <button type="button" style={navBtnStyle} onClick={() => { handleLogout(); closeMenu(); }}>
+                  {t("nav_logout")}
+                </button>
+              )}
             </div>
-          </>
-        )}
+          </aside>
+        </div>
       </nav>
 
       <Outlet />

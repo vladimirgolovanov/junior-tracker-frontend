@@ -154,16 +154,16 @@ export default function StatsPage() {
   }, [childId, token, formulaDateFrom, formulaDateTo]);
 
   const sections: { key: keyof DayAnalytics["data"]; label: string; color: string }[] = [
-    { key: "cycle_length", label: t("stats.cycleLength"), color: "#6c8ebf" },
-    { key: "day_sleep_duration", label: t("stats.daySleep"), color: "#82b366" },
-    { key: "night_sleep_duration", label: t("stats.nightSleep"), color: "#4a4a8a" },
-    { key: "total_awake_duration", label: t("stats.totalAwake"), color: "#d6a84e" },
+    { key: "cycle_length", label: t("stats_cycleLength"), color: "#6c8ebf" },
+    { key: "day_sleep_duration", label: t("stats_daySleep"), color: "#82b366" },
+    { key: "night_sleep_duration", label: t("stats_nightSleep"), color: "#4a4a8a" },
+    { key: "total_awake_duration", label: t("stats_totalAwake"), color: "#d6a84e" },
   ];
 
   return (
     <div className="stats-page">
       <div className="stats-header">
-        <h2>{t("stats.title")}</h2>
+        <h2>{t("stats_title")}</h2>
         {children.length > 1 && (
           <select
             value={childId ?? ""}
@@ -178,7 +178,7 @@ export default function StatsPage() {
         )}
       </div>
 
-      {loading && <p>{t("settings.loading")}</p>}
+      {loading && <p>{t("settings_loading")}</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {!loading && days.length > 0 && (
@@ -195,7 +195,7 @@ export default function StatsPage() {
         </div>
       )}
 
-      {formulaLoading && <p>{t("settings.loading")}</p>}
+      {formulaLoading && <p>{t("settings_loading")}</p>}
       {formulaError && <p style={{ color: "red" }}>{formulaError}</p>}
 
       {childId !== null && (
@@ -209,19 +209,19 @@ export default function StatsPage() {
           style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", margin: "8px 0" }}
         >
           <label>
-            {t("chart.dateFrom")} <input name="date_from" type="date" defaultValue={formulaDateFrom} required />
+            {t("chart_dateFrom")} <input name="date_from" type="date" defaultValue={formulaDateFrom} required />
           </label>
           <label>
-            {t("chart.dateTo")} <input name="date_to" type="date" defaultValue={formulaDateTo} required />
+            {t("chart_dateTo")} <input name="date_to" type="date" defaultValue={formulaDateTo} required />
           </label>
-          <button type="submit">{t("chart.load")}</button>
+          <button type="submit">{t("chart_load")}</button>
         </form>
       )}
 
       {!formulaLoading && formulaDays.length > 0 && (
         <div className="stats-sections">
           <div className="stats-section">
-            <h3 className="stats-section-title">{t("stats.formulaVolume")}</h3>
+            <h3 className="stats-section-title">{t("stats_formulaVolume")}</h3>
             <BarChart
               days={formulaDays.map((d) => ({ date: d.date, value: d.total_volume }))}
               color="#e07b39"
@@ -229,7 +229,7 @@ export default function StatsPage() {
             />
           </div>
           <div className="stats-section">
-            <h3 className="stats-section-title">{t("stats.formulaCount")}</h3>
+            <h3 className="stats-section-title">{t("stats_formulaCount")}</h3>
             <BarChart
               days={formulaDays.map((d) => ({ date: d.date, value: d.count }))}
               color="#c45c8a"

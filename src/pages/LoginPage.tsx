@@ -28,36 +28,32 @@ export default function LoginPage() {
 
     if (!r.ok) {
       const detail = await r.json().then((b) => b?.detail).catch(() => undefined);
-      setError(typeof detail === "string" ? detail : t("login.failed"));
+      setError(typeof detail === "string" ? detail : t("login_failed"));
       return;
     }
 
     const { access_token } = await r.json();
     setToken(access_token);
-    navigate("/events");
+    navigate("/chart");
   }
 
   return (
-    <div>
-      <h1>{t("login.title")}</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            {t("login.email")}
-            <input name="username" type="email" required />
-          </label>
-        </div>
-        <div>
-          <label>
-            {t("login.password")}
-            <input name="password" type="password" required />
-          </label>
-        </div>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit" className="btn btn-primary">{t("login.submit")}</button>
+    <div className="auth-page">
+      <h1>{t("login_title")}</h1>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <label className="auth-field">
+          <span className="auth-field-label">{t("login_email")}</span>
+          <input name="username" type="email" autoComplete="email" required />
+        </label>
+        <label className="auth-field">
+          <span className="auth-field-label">{t("login_password")}</span>
+          <input name="password" type="password" autoComplete="current-password" required />
+        </label>
+        {error && <p className="auth-error">{error}</p>}
+        <button type="submit" className="btn btn-primary">{t("login_submit")}</button>
       </form>
-      <p>
-        {t("login.noAccount")} <Link to="/register">{t("login.register")}</Link>
+      <p className="auth-alt">
+        {t("login_noAccount")} <Link to="/register">{t("login_register")}</Link>
       </p>
     </div>
   );

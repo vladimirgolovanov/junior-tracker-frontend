@@ -49,7 +49,7 @@ function nowPickerValue(monthShort: string[]): { day: string; hour: string; minu
 
 export default function AddEventPage() {
   const { t } = useTranslation();
-  const monthShort = t("common.months").split("_");
+  const monthShort = t("common_months").split("_");
   const token = useAuthStore((s) => s.token);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -122,7 +122,7 @@ export default function AddEventPage() {
     const isoLocal = `${dayEntry.date}T${pickerValue.hour.padStart(2, "0")}:${pickerValue.minute}:00`;
     const occurredAt = new Date(isoLocal).toISOString();
     const useRangeRoute = selectedType?.format === "range" && rangeMode === "duration" && !!rangeLength;
-    const url = useRangeRoute ? "/api/v2/events/range" : "/api/events/";
+    const url = useRangeRoute ? "/api/v2/events/range" : "/api/v2/events/";
     const body =
       useRangeRoute
         ? {
@@ -149,7 +149,7 @@ export default function AddEventPage() {
       if (!r.ok) throw new Error("Failed");
       navigate(-1);
     } catch {
-      setSubmitError(t("addEvent.saveFailed"));
+      setSubmitError(t("addEvent_saveFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -161,10 +161,10 @@ export default function AddEventPage() {
         <div className="type-picker">
           <span className="type-chip selected readonly">
             <span className="type-chip-dot" style={{ background: selectedType.color ?? "var(--muted3)" }} />
-            {t(`et.${selectedType.name}`, selectedType.name)}
+            {t(`et_${selectedType.name}`, selectedType.name)}
           </span>
           <button type="button" className="type-edit" onClick={() => setEditingType(true)}>
-            {t("addEvent.changeType")}
+            {t("addEvent_changeType")}
           </button>
         </div>
       ) : (
@@ -187,7 +187,7 @@ export default function AddEventPage() {
                 }}
               >
                 <span className="type-chip-dot" style={{ background: et.color ?? "var(--muted3)" }} />
-                {t(`et.${et.name}`, et.name)}
+                {t(`et_${et.name}`, et.name)}
               </button>
             );
           })}
@@ -228,14 +228,14 @@ export default function AddEventPage() {
               className={rangeMode === "open" ? "seg-btn active" : "seg-btn"}
               onClick={() => setRangeMode("open")}
             >
-              {t("addEvent.rangeModeOpen")}
+              {t("addEvent_rangeModeOpen")}
             </button>
             <button
               type="button"
               className={rangeMode === "duration" ? "seg-btn active" : "seg-btn"}
               onClick={() => setRangeMode("duration")}
             >
-              {t("addEvent.rangeModeDuration")}
+              {t("addEvent_rangeModeDuration")}
             </button>
           </div>
           {rangeMode === "duration" && (
@@ -244,7 +244,7 @@ export default function AddEventPage() {
               type="number"
               inputMode="numeric"
               min={1}
-              aria-label={t("addEvent.rangeModeDuration")}
+              aria-label={t("addEvent_rangeModeDuration")}
               value={rangeLength}
               onChange={(e) => setRangeLength(e.target.value)}
               style={{ width: 56 }}
@@ -252,7 +252,7 @@ export default function AddEventPage() {
           )}
           {rangeMode === "duration" && rangeTimes && (
             <span style={{ fontSize: 14, color: "var(--muted2)" }}>
-              {t("addEvent.willCreate")}: {t(`et.${selectedType.name}`, selectedType.name)} {rangeTimes}
+              {t("addEvent_willCreate")}: {t(`et_${selectedType.name}`, selectedType.name)} {rangeTimes}
             </span>
           )}
         </div>
@@ -261,7 +261,7 @@ export default function AddEventPage() {
       {selectedType?.volume_input && (
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ display: "flex", alignItems: "baseline", gap: 12, flexWrap: "wrap" }}>
-            {t("addEvent.volume")}
+            {t("addEvent_volume")}
             {suggestedVolumes.map((v) => (
               <button key={v} type="button" className="volume-hint" onClick={() => setVolume(String(v))}>
                 {v}
@@ -275,20 +275,20 @@ export default function AddEventPage() {
             min={0}
             value={volume}
             onChange={(e) => setVolume(e.target.value)}
-            placeholder={t("addEvent.optional")}
+            placeholder={t("addEvent_optional")}
           />
         </label>
       )}
 
       {selectedType?.describe_input && (
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {t("addEvent.description")}
+          {t("addEvent_description")}
           <input
             ref={descriptionRef}
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder={t("addEvent.optional")}
+            placeholder={t("addEvent_optional")}
           />
         </label>
       )}
@@ -306,10 +306,10 @@ export default function AddEventPage() {
           onClick={handleAddEvent}
         >
           {submitting
-            ? t("addEvent.saving")
+            ? t("addEvent_saving")
             : rangeTimes
-              ? `${t("addEvent.save")} · ${rangeTimes}`
-              : t("addEvent.save")}
+              ? `${t("addEvent_save")} · ${rangeTimes}`
+              : t("addEvent_save")}
         </button>
       </div>
     </div>

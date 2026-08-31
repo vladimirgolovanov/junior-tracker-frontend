@@ -105,10 +105,10 @@ export default function RegisterPage() {
       const parsed = parseFieldErrors(apiErr.errors);
       if (parsed.length > 0) {
         setFieldErrors(parsed);
-        setError(apiErr.title ?? t("register.failed"));
+        setError(apiErr.title ?? t("register_failed"));
       } else {
         const detail = apiErr.detail;
-        setError(typeof detail === "string" ? detail : t("register.failed"));
+        setError(typeof detail === "string" ? detail : t("register_failed"));
       }
       return;
     }
@@ -117,122 +117,106 @@ export default function RegisterPage() {
     // instead of bouncing them to the login page.
     const data = (await res.json()) as RegisterSuccess;
     setToken(data.access_token);
-    navigate("/events");
+    navigate("/chart");
   }
 
   return (
-    <div>
-      <h1>{t("register.title")}</h1>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            {t("register.email")}
-            <input name="email" type="email" required />
-          </label>
-        </div>
-        <div>
-          <label>
-            {t("register.password")}
-            <input name="password" type="password" required minLength={3} />
-          </label>
-        </div>
+    <div className="auth-page">
+      <h1>{t("register_title")}</h1>
+      <form className="auth-form" onSubmit={handleSubmit}>
+        <label className="auth-field">
+          <span className="auth-field-label">{t("register_email")}</span>
+          <input name="email" type="email" autoComplete="email" required />
+        </label>
+        <label className="auth-field">
+          <span className="auth-field-label">{t("register_password")}</span>
+          <input name="password" type="password" autoComplete="new-password" required minLength={3} />
+        </label>
 
         {!locked && (
-          <fieldset>
-            <legend>{t("register.childMode")}</legend>
-            <label>
-              <input
-                type="radio"
-                name="mode"
-                value="create"
-                checked={mode === "create"}
-                onChange={() => setMode("create")}
-              />
-              {t("register.createChild")}
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="mode"
-                value="join"
-                checked={mode === "join"}
-                onChange={() => setMode("join")}
-              />
-              {t("register.joinChild")}
-            </label>
-          </fieldset>
-        )}
-
-        {locked ? (
-          <p>{t("register.joiningWithCode", { code: initialCode })}</p>
-        ) : mode === "create" ? (
-          <>
-            <div>
-              <label>
-                {t("register.childName")}
-                <input
-                  type="text"
-                  value={childName}
-                  onChange={(e) => setChildName(e.target.value)}
-                  required
-                />
-              </label>
+          <div className="auth-field">
+            <span className="auth-field-label">{t("register_childMode")}</span>
+            <div className="seg">
+              <button
+                type="button"
+                className={mode === "create" ? "seg-btn active" : "seg-btn"}
+                onClick={() => setMode("create")}
+              >
+                {t("register_createChild")}
+              </button>
+              <button
+                type="button"
+                className={mode === "join" ? "seg-btn active" : "seg-btn"}
+                onClick={() => setMode("join")}
+              >
+                {t("register_joinChild")}
+              </button>
             </div>
-            <div>
-              <label>
-                {t("register.timezone")}
-                <select
-                  value={timezone}
-                  onChange={(e) => setTimezone(e.target.value)}
-                  required
-                >
-                  {timezones.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {tz}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div>
-              <label>
-                {t("register.birthdate")}
-                <input
-                  type="date"
-                  value={birthdate}
-                  max={today}
-                  onChange={(e) => setBirthdate(e.target.value)}
-                  required
-                />
-              </label>
-            </div>
-          </>
-        ) : (
-          <div>
-            <label>
-              {t("register.joinCode")}
-              <input
-                type="text"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
-                required
-              />
-            </label>
           </div>
         )}
 
-        {error && <p style={{ color: "red", marginBottom: 0 }}>{error}</p>}
+        {locked ? (
+          <p className="auth-note">{t("register_joiningWithCode", { code: initialCode })}</p>
+        ) : mode === "create" ? (
+          <>
+            <label className="auth-field">
+              <span className="auth-field-label">{t("register_childName")}</span>
+              <input
+                type="text"
+                value={childName}
+                onChange={(e) => setChildName(e.target.value)}
+                required
+              />
+            </label>
+            <label className="auth-field">
+              <span className="auth-field-label">{t("register_timezone")}</span>
+              <select
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                required
+              >
+                {timezones.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="auth-field">
+              <span className="auth-field-label">{t("register_birthdate")}</span>
+              <input
+                type="date"
+                value={birthdate}
+                max={today}
+                onChange={(e) => setBirthdate(e.target.value)}
+                required
+              />
+            </label>
+          </>
+        ) : (
+          <label className="auth-field">
+            <span className="auth-field-label">{t("register_joinCode")}</span>
+            <input
+              type="text"
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              required
+            />
+          </label>
+        )}
+
+        {error && <p className="auth-error">{error}</p>}
         {fieldErrors.length > 0 && (
-          <ul style={{ color: "red", marginTop: 4 }}>
+          <ul className="auth-error-list">
             {fieldErrors.map(({ field, message }) => (
               <li key={field}>{message}</li>
             ))}
           </ul>
         )}
-        <button type="submit" className="btn btn-primary">{t("register.submit")}</button>
+        <button type="submit" className="btn btn-primary">{t("register_submit")}</button>
       </form>
-      <p>
-        {t("register.hasAccount")} <Link to="/login">{t("register.login")}</Link>
+      <p className="auth-alt">
+        {t("register_hasAccount")} <Link to="/login">{t("register_login")}</Link>
       </p>
     </div>
   );
