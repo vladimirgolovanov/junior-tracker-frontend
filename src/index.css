@@ -105,10 +105,14 @@ th, td {
 }
 
 .qa-btn {
-  width: 72px;
+  /* Square by default; widen into a rectangle only when a word can't fit
+     inside the square with ~10% horizontal padding (min-content grows past
+     the 72px min-width). */
+  min-width: 72px;
+  width: min-content;
   height: 72px;
   box-sizing: border-box;
-  padding: 6px;
+  padding: 6px 7px;
   display: flex;
   align-items: center;
   justify-content: center;

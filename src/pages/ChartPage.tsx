@@ -701,34 +701,6 @@ export default function ChartPage() {
                     );
                   })
                 }
-                {predictEnabled && day === todayInTz && currentMinutes !== null && status?.is_currently_asleep && (() => {
-                  const overlapPred = predictions.find((p) => {
-                    if (p.segment_type !== "day_awake") return false;
-                    const sd = localDtToDay(p.start_dt);
-                    const ed = localDtToDay(p.end_dt);
-                    const startMin = sd === todayInTz ? localDtToMinutes(p.start_dt) : 0;
-                    const endMin = ed === todayInTz ? localDtToMinutes(p.end_dt) : MINUTES_IN_DAY;
-                    return startMin <= currentMinutes! && endMin > currentMinutes!;
-                  });
-                  if (!overlapPred) return null;
-                  const ed = localDtToDay(overlapPred.end_dt);
-                  const endMin = ed === todayInTz ? localDtToMinutes(overlapPred.end_dt) : MINUTES_IN_DAY;
-                  const width = ((endMin - currentMinutes!) / MINUTES_IN_DAY) * 100;
-                  if (width <= 0) return null;
-                  return (
-                    <div
-                      key="pred-current-sleep-ext"
-                      title={`${minutesToTimeLabel(currentMinutes!)} – ${minutesToTimeLabel(endMin)}`}
-                      style={{
-                        position: "absolute",
-                        left: `${(currentMinutes! / MINUTES_IN_DAY) * 100}%`,
-                        width: `${width}%`,
-                        height: "100%",
-                        background: "rgba(74, 144, 217, 0.33)",
-                      }}
-                    />
-                  );
-                })()}
                 {Object.entries(additionalData).flatMap(([typeIdStr, events]) => {
                   const typeId = Number(typeIdStr);
                   const etColor = eventTypes.find((et) => et.id === typeId)?.color ?? null;

@@ -8,6 +8,8 @@ import AddEventPage from "./pages/AddEventPage";
 import ChildSettingsPage from "./pages/ChildSettingsPage";
 import StatsPage from "./pages/StatsPage";
 import InvitePage from "./pages/InvitePage";
+import ExportPage from "./pages/ExportPage";
+import EventsPage from "./pages/EventsPage";
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
             <Route path="/child-settings" element={<ChildSettingsPage />} />
             <Route path="/stats" element={<StatsPage />} />
             <Route path="/invite" element={<InvitePage />} />
+            <Route path="/export" element={<ExportPage />} />
+            <Route path="/events" element={<EventsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/chart" replace />} />
         </Route>

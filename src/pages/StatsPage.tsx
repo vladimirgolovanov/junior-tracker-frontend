@@ -126,7 +126,9 @@ export default function StatsPage() {
         const sorted = [...data].sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        setDays(sorted.slice(0, 14));
+        // Drop the newest day (today is still in progress and skews the chart);
+        // shift the 14-day window one day back so the day count stays the same.
+        setDays(sorted.slice(1, 15));
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
