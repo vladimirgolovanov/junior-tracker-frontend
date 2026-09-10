@@ -377,6 +377,30 @@ th, td {
   gap: 14px;
 }
 
+/* A labelled group of related drawer links (e.g. "Statistics" > Sleep / Bottle). */
+.drawer-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.drawer-group-title {
+  font-size: 0.72em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.drawer-subnav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-left: 2px;
+  padding-left: 14px;
+  border-left: 2px solid var(--border);
+}
+
 .drawer-footer {
   margin-top: auto;
   display: flex;
