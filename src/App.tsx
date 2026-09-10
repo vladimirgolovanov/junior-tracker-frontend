@@ -6,7 +6,8 @@ import RegisterPage from "./pages/RegisterPage";
 import ChartPage from "./pages/ChartPage";
 import AddEventPage from "./pages/AddEventPage";
 import ChildSettingsPage from "./pages/ChildSettingsPage";
-import StatsPage from "./pages/StatsPage";
+import SleepPage from "./pages/SleepPage";
+import BottlePage from "./pages/BottlePage";
 import InvitePage from "./pages/InvitePage";
 import ExportPage from "./pages/ExportPage";
 import EventsPage from "./pages/EventsPage";
@@ -22,7 +23,8 @@ export default function App() {
             <Route path="/chart" element={<ChartPage />} />
             <Route path="/add-event" element={<AddEventPage />} />
             <Route path="/child-settings" element={<ChildSettingsPage />} />
-            <Route path="/stats" element={<StatsPage />} />
+            <Route path="/sleep" element={<SleepPage />} />
+            <Route path="/bottle" element={<BottlePage />} />
             <Route path="/invite" element={<InvitePage />} />
             <Route path="/export" element={<ExportPage />} />
             <Route path="/events" element={<EventsPage />} />

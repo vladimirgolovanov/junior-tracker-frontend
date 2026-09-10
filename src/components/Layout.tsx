@@ -130,7 +130,8 @@ export default function Layout() {
             <nav className="drawer-nav">
               {token ? (
                 <>
-                  <Link to="/stats" onClick={closeMenu}>{t("nav_stats")}</Link>
+                  <Link to="/sleep" onClick={closeMenu}>{t("nav_sleep")}</Link>
+                  <Link to="/bottle" onClick={closeMenu}>{t("nav_bottle")}</Link>
                   <Link to="/events" onClick={closeMenu}>{t("nav_events")}</Link>
                   <Link to="/export" onClick={closeMenu}>{t("nav_export")}</Link>
                   <Link to="/invite" onClick={closeMenu}>{t("nav_invite")}</Link>
