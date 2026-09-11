@@ -3,8 +3,10 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useChildren from "../hooks/useChildren";
 import { useAuthStore } from "../store/auth";
+import { useChildrenStore } from "../store/children";
 import { useEventTypesStore } from "../store/eventTypes";
 import { authedFetch } from "../api/client";
+import { readSnapshot, writeSnapshot } from "../api/snapshot";
 import useStatus from "../hooks/useStatus";
 
 // iOS Safari only opens the software keyboard from within a user gesture.
@@ -96,6 +98,17 @@ interface DashboardData {
   today: DayData;
   yesterday: DayData;
   day_before_yesterday: DayData;
+}
+
+// Persisted last-good dashboard, per child. Only the live (non-historical) view
+// is cached, so its "today" column is what we restore on an offline reload.
+interface DashboardSnapshot {
+  data: DashboardData;
+  savedAt: number;
+}
+
+function dashSnapKey(childId: number | undefined): string {
+  return `dashboard:${childId ?? ""}`;
 }
 
 // --- Helpers ---
@@ -332,7 +345,20 @@ export default function ChartPage() {
   const chartRef = useRef<HTMLDivElement>(null);
   const firstBarRef = useRef<HTMLDivElement | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  // Seed the dashboard from the last-good snapshot (live view only) so a cold
+  // reload on a dead network shows the previous columns instead of "No data".
+  // Read the child id straight from the store — it's hydrated synchronously, so
+  // firstChildId is already known on the first render, before it's derived below.
+  const [dashboard, setDashboard] = useState<DashboardData | null>(() =>
+    todayParam
+      ? null
+      : readSnapshot<DashboardSnapshot>(dashSnapKey(useChildrenStore.getState().children[0]?.id))?.data ?? null,
+  );
+  // Whether a valid 200 has landed this session. Until it does we're showing the
+  // cached snapshot: keep the "offline" badge up and freeze live minute-growth
+  // (growing cached totals by the hours since the snapshot would be wrong).
+  const [dashboardFresh, setDashboardFresh] = useState(false);
+  const [dashboardError, setDashboardError] = useState(false);
   const dashboardFetchedAt = useRef<number>(0);
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
@@ -373,11 +399,17 @@ export default function ChartPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data?.today) {
+          const savedAt = Date.now();
           setDashboard(data as DashboardData);
-          dashboardFetchedAt.current = Date.now();
+          dashboardFetchedAt.current = savedAt;
+          setDashboardFresh(true);
+          setDashboardError(false);
+          // Cache only the live view; a historical (?today=) fetch must not
+          // clobber the "today" snapshot we restore on an offline reload.
+          if (!todayParam) writeSnapshot<DashboardSnapshot>(dashSnapKey(firstChildId), { data: data as DashboardData, savedAt });
         }
       })
-      .catch(() => {});
+      .catch(() => { setDashboardError(true); });
   }
 
   function fetchPredictions() {
@@ -515,12 +547,22 @@ export default function ChartPage() {
         </div>
       )}
 
+      {dashboard && !todayParam && !dashboardFresh && (
+        <div style={{ margin: "8px 0", padding: "4px 10px", borderRadius: 6, background: "var(--surface2)", color: "var(--muted)", fontSize: "0.9em", display: "inline-block" }}>
+          {t("chart_staleOffline")}
+        </div>
+      )}
+
       {dashboard && (
         <div className="dashboard-columns">
-          <div className="dashboard-col"><DayColumn title={t("chart_today")} data={dashboard.today} live={!todayParam} fetchedAtMs={dashboardFetchedAt.current} /></div>
+          <div className="dashboard-col"><DayColumn title={t("chart_today")} data={dashboard.today} live={!todayParam && dashboardFresh} fetchedAtMs={dashboardFetchedAt.current} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart_yesterday")} data={dashboard.yesterday} /></div>
           <div className="dashboard-col"><DayColumn title={t("chart_dayBefore")} data={dashboard.day_before_yesterday} /></div>
         </div>
+      )}
+
+      {!dashboard && dashboardError && !todayParam && (
+        <div style={{ margin: "12px 0", color: "var(--muted)" }}>{t("chart_offlineNoData")}</div>
       )}
 
       {byDay.size > 0 && (

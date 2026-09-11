@@ -56,6 +56,8 @@
   "chart_loadFailed": "Failed to load chart data",
   "chart_in": "in",
   "chart_noData": "No data",
+  "chart_staleOffline": "Offline · showing last saved data",
+  "chart_offlineNoData": "No connection and no saved data yet",
   "et_sleep_start": "Sleep",
   "et_sleep_end": "Sleep end",
   "et_breastfeeding_start": "Breastfeeding",

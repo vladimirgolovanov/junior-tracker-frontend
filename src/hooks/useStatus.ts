@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { authedFetch } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import { readSnapshot, writeSnapshot } from "../api/snapshot";
 
 // One event as surfaced in the "last events" block.
 export interface StatusEvent {
@@ -38,12 +39,26 @@ export interface Status {
 // Polls the shared /api/v2/status "pulse" endpoint once a minute. `status` is null
 // until the first successful load; `fetchedAt` is Date.now() of that load so the
 // caller can advance current_min locally between polls.
+// localStorage key for the last-good status of a given child.
+function snapKey(childId: number | undefined): string {
+  return `status:${childId ?? ""}`;
+}
+
+interface StatusSnapshot {
+  status: Status;
+  savedAt: number;
+}
+
 export default function useStatus(
   childId: number | undefined,
 ): { status: Status | null; fetchedAt: number } {
   const token = useAuthStore((s) => s.token);
-  const [status, setStatus] = useState<Status | null>(null);
-  const [fetchedAt, setFetchedAt] = useState(0);
+  // Seed from the last-good snapshot so a cold reload on a dead network still
+  // shows the previous pulse. fetchedAt = savedAt keeps the local current_min
+  // advance correct — it's wall-clock time and grows 1:1 with real minutes.
+  const seed = readSnapshot<StatusSnapshot>(snapKey(childId));
+  const [status, setStatus] = useState<Status | null>(seed?.status ?? null);
+  const [fetchedAt, setFetchedAt] = useState(seed?.savedAt ?? 0);
 
   useEffect(() => {
     if (!childId) return;
@@ -58,8 +73,10 @@ export default function useStatus(
         .then((r) => r.json())
         .then((data) => {
           if (!cancelled && data && typeof data.is_currently_asleep === "boolean") {
+            const savedAt = Date.now();
             setStatus(data as Status);
-            setFetchedAt(Date.now());
+            setFetchedAt(savedAt);
+            writeSnapshot<StatusSnapshot>(snapKey(childId), { status: data as Status, savedAt });
           }
         })
         .catch(() => {});
