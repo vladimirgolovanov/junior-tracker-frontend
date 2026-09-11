@@ -6,10 +6,14 @@ import { authedFetch } from "../api/client";
 import BarChart from "../components/BarChart";
 
 interface FormulaDay {
+  // For "day" this is the calendar date; for "week"/"month" it's the bucket's
+  // start date (yyyy-MM-dd). Backend does the aggregation — see the granularity param.
   date: string;
   total_volume: number;
   count: number;
 }
+
+type Granularity = "day" | "week" | "month";
 
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -31,6 +35,7 @@ export default function BottlePage() {
   const [error, setError] = useState<string | null>(null);
   const [dateFrom, setDateFrom] = useState(() => daysAgo(30));
   const [dateTo, setDateTo] = useState(() => toDateStr(new Date()));
+  const [granularity, setGranularity] = useState<Granularity>("day");
 
   useEffect(() => {
     if (children.length > 0 && childId === null) {
@@ -43,7 +48,7 @@ export default function BottlePage() {
     setLoading(true);
     setError(null);
     authedFetch(
-      `/api/analytics/formula?child_id=${childId}&date_from=${dateFrom}&date_to=${dateTo}`
+      `/api/analytics/formula?child_id=${childId}&date_from=${dateFrom}&date_to=${dateTo}&granularity=${granularity}`
     )
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`);
@@ -57,7 +62,7 @@ export default function BottlePage() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [childId, token, dateFrom, dateTo]);
+  }, [childId, token, dateFrom, dateTo, granularity]);
 
   return (
     <div className="stats-page">
@@ -92,6 +97,14 @@ export default function BottlePage() {
           </label>
           <label>
             {t("chart_dateTo")} <input name="date_to" type="date" defaultValue={dateTo} required />
+          </label>
+          <label>
+            {t("bottle_granularity")}{" "}
+            <select value={granularity} onChange={(e) => setGranularity(e.target.value as Granularity)}>
+              <option value="day">{t("bottle_granularityDay")}</option>
+              <option value="week">{t("bottle_granularityWeek")}</option>
+              <option value="month">{t("bottle_granularityMonth")}</option>
+            </select>
           </label>
           <button type="submit">{t("chart_load")}</button>
         </form>
