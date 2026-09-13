@@ -1,76 +1,23 @@
 import { useState, useEffect } from "react";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
-import { useThemeStore } from "../store/theme";
 import { authedFetch } from "../api/client";
 import useChildren from "../hooks/useChildren";
+import { LangToggle, ThemeToggle } from "./SettingsToggles";
+import { navBtnStyle } from "./navBtnStyle";
 
-const navBtnStyle: React.CSSProperties = {
-  background: "none", border: "none", padding: 0,
-  cursor: "pointer", color: "inherit", font: "inherit", textAlign: "left",
-};
-
-function LangToggle() {
-  const { i18n } = useTranslation();
-  const current = i18n.language;
-
-  function switchTo(lang: string) {
-    i18n.changeLanguage(lang);
-    localStorage.setItem("lang", lang);
-  }
-
-  return (
-    <span style={{ display: "flex", gap: 4, fontSize: "0.85em" }}>
-      <button
-        type="button"
-        onClick={() => switchTo("en")}
-        style={{ ...navBtnStyle, fontWeight: current === "en" ? "bold" : "normal", textDecoration: current === "en" ? "underline" : "none" }}
-      >
-        EN
-      </button>
-      <span>|</span>
-      <button
-        type="button"
-        onClick={() => switchTo("ru")}
-        style={{ ...navBtnStyle, fontWeight: current === "ru" ? "bold" : "normal", textDecoration: current === "ru" ? "underline" : "none" }}
-      >
-        RU
-      </button>
-    </span>
-  );
-}
-
-function ThemeToggle() {
-  const { mode, setMode } = useThemeStore();
-  const opts: { key: "light" | "dark" | "system"; label: string }[] = [
-    { key: "light", label: "☀" },
-    { key: "dark", label: "☾" },
-    { key: "system", label: "Auto" },
-  ];
-  return (
-    <span style={{ display: "flex", gap: 4, fontSize: "0.85em" }}>
-      {opts.map((o, i) => (
-        <span key={o.key} style={{ display: "flex", gap: 4 }}>
-          {i > 0 && <span>|</span>}
-          <button
-            type="button"
-            onClick={() => setMode(o.key)}
-            style={{ ...navBtnStyle, fontWeight: mode === o.key ? "bold" : "normal", textDecoration: mode === o.key ? "underline" : "none" }}
-          >
-            {o.label}
-          </button>
-        </span>
-      ))}
-    </span>
-  );
-}
+// Auth pages render their own full-screen layout (with their own EN/RU + theme
+// toggles), so the shared header would only get in the way there.
+const AUTH_ROUTES = ["/login", "/register"];
 
 export default function Layout() {
   const { t } = useTranslation();
   const token = useAuthStore((s) => s.token);
   const logout = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isAuthRoute = AUTH_ROUTES.includes(pathname);
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
   useChildren();
@@ -92,6 +39,11 @@ export default function Layout() {
     await authedFetch("/auth/logout", { method: "POST" });
     logout();
     navigate("/login");
+  }
+
+  // Auth pages are self-contained full-screen layouts — no shared header.
+  if (isAuthRoute) {
+    return <Outlet />;
   }
 
   // The header keeps the same shape signed in or out (logo left, hamburger right);

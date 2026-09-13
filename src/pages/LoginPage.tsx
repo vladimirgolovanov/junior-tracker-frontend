@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { authedFetch } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import AuthShell from "../components/AuthShell";
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -38,7 +39,8 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
+    <AuthShell>
+      <div className="auth-page">
       <h1>{t("login_title")}</h1>
       <form className="auth-form" onSubmit={handleSubmit}>
         <label className="auth-field">
@@ -55,6 +57,7 @@ export default function LoginPage() {
       <p className="auth-alt">
         {t("login_noAccount")} <Link to="/register">{t("login_register")}</Link>
       </p>
-    </div>
+      </div>
+    </AuthShell>
   );
 }

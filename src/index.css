@@ -508,7 +508,108 @@ th, td {
   color: var(--btn-primary-text);
 }
 
-/* Auth pages (login / register): same surface + radius language as the dashboard */
+/* Auth pages (login / register): full-screen two-pane layout —
+   coloured brand panel + form panel. */
+.auth-split {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+  /* Cancel the body's 16px padding so the split reaches every edge. */
+  margin: -16px;
+}
+
+/* Left brand panel: solid gradient fill, theme-independent (white text reads
+   on the gradient in both light and dark). */
+.auth-brand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 48px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+}
+
+.auth-brand-inner {
+  max-width: 420px;
+}
+
+.auth-brand-logo {
+  font-size: 34px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+}
+
+.auth-brand-tagline {
+  margin: 20px 0 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.auth-brand-desc {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.auth-brand-points {
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-brand-points li {
+  position: relative;
+  padding-left: 26px;
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-brand-points li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Right form panel */
+.auth-panel {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.auth-panel-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 16px;
+}
+
+.auth-panel-inner {
+  margin: auto;
+  width: 100%;
+}
+
 .auth-page {
   max-width: 360px;
   margin: 0 auto;
@@ -607,4 +708,45 @@ th, td {
   background: var(--surface);
   color: var(--muted2);
   font-size: 14px;
+}
+
+/* Mobile: stack the panes — brand becomes a compact top band, form below. */
+@media (max-width: 768px) {
+  .auth-split {
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .auth-brand {
+    flex: none;
+    padding: 28px 24px;
+  }
+
+  .auth-brand-logo {
+    font-size: 26px;
+  }
+
+  .auth-brand-tagline {
+    margin-top: 12px;
+    font-size: 17px;
+  }
+
+  /* Keep the top band short on phones — details live on the desktop panel. */
+  .auth-brand-desc,
+  .auth-brand-points {
+    display: none;
+  }
+
+  .auth-panel {
+    flex: 1;
+    padding: 24px 20px 32px;
+  }
+
+  /* Give the toggles room above the form instead of overlapping it. */
+  .auth-panel-controls {
+    position: static;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
 }

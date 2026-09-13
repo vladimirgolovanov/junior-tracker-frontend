@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../store/auth";
+import AuthShell from "../components/AuthShell";
 
 // The register endpoint is unauthenticated (no token yet) and lives on the v2
 // backend (proxied /api/v2 -> :8001), so we call it with a plain fetch().
@@ -121,7 +122,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="auth-page">
+    <AuthShell>
+      <div className="auth-page">
       <h1>{t("register_title")}</h1>
       <form className="auth-form" onSubmit={handleSubmit}>
         <label className="auth-field">
@@ -218,6 +220,7 @@ export default function RegisterPage() {
       <p className="auth-alt">
         {t("register_hasAccount")} <Link to="/login">{t("register_login")}</Link>
       </p>
-    </div>
+      </div>
+    </AuthShell>
   );
 }
