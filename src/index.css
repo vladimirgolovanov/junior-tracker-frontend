@@ -526,11 +526,29 @@ th, td {
   align-items: center;
   padding: 48px;
   color: #ffffff;
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #a855f7 100%);
+  /* Night-sky artwork as the backdrop, fit to the panel width. The underlay
+     colour matches the image's bottom edge so any uncovered area stays on-brand
+     (and is a graceful fallback if the image fails to load). */
+  background-color: #5b62c3;
+  background-image: url("/brand-bg.jpg");
+  background-repeat: no-repeat;
+  background-position: center 30%;
+  background-size: 100% auto;
 }
 
 .auth-brand-inner {
   max-width: 420px;
+}
+
+/* App icon shown above the wordmark. Rounded like a launcher icon so it reads
+   as the app's icon rather than a photo. */
+.auth-brand-icon {
+  display: block;
+  width: 86px;
+  height: 86px;
+  border-radius: 22%;
+  margin-bottom: 20px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
 }
 
 .auth-brand-logo {
@@ -585,6 +603,29 @@ th, td {
   background: rgba(255, 255, 255, 0.2);
   font-size: 11px;
   font-weight: 700;
+}
+
+/* Official store badges. The PNG carries its own clear-space padding, so we
+   size by height and let the width follow. */
+.auth-brand-stores {
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-brand-store {
+  display: inline-block;
+  /* Offset the badge's built-in transparent margin so it lines up with the
+     text above it. */
+  margin-left: -8px;
+}
+
+.auth-brand-store img {
+  display: block;
+  height: 84px;
+  width: auto;
 }
 
 /* Right form panel */
@@ -727,6 +768,12 @@ th, td {
     font-size: 26px;
   }
 
+  .auth-brand-icon {
+    width: 72px;
+    height: 72px;
+    margin-bottom: 16px;
+  }
+
   .auth-brand-tagline {
     margin-top: 12px;
     font-size: 17px;
@@ -736,6 +783,11 @@ th, td {
   .auth-brand-desc,
   .auth-brand-points {
     display: none;
+  }
+
+  /* Keep the download button in the compact band (useful for Android users). */
+  .auth-brand-stores {
+    margin-top: 18px;
   }
 
   .auth-panel {

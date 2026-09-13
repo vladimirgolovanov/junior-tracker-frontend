@@ -27,8 +27,10 @@
   "auth_tagline": "Track your little one's rhythm",
   "auth_desc": "Sleep, feeds and more — one calm place to see how your child's days flow.",
   "auth_point_sleep": "Sleep charts",
-  "auth_point_bottle": "Bottle stats",
+  "auth_point_bottle": "Feeding stats",
   "auth_point_share": "Shared with family",
+  "auth_get_android": "Download for Android",
+  "auth_get_ios": "Download on the App Store",
   "addEvent_description": "Description",
   "addEvent_optional": "Optional",
   "addEvent_volume": "Volume (ml)",
@@ -295,5 +297,9 @@
   "export_notReady": "Export is not ready yet",
   "export_errorStatus": "Error {{status}}",
   "export_networkError": "Network error",
-  "export_loading": "Loading…"
+  "export_loading": "Loading…",
+  "export_share": "Share",
+  "export_savedToDownloads": "Saved to Downloads",
+  "export_open": "Open",
+  "export_saveError": "Couldn't save file"
 }
