@@ -301,5 +301,7 @@
   "export_share": "Share",
   "export_savedToDownloads": "Saved to Downloads",
   "export_open": "Open",
-  "export_saveError": "Couldn't save file"
+  "export_saveError": "Couldn't save file",
+  "export_openError": "Couldn't open the file",
+  "export_shareError": "Couldn't share the file"
 }

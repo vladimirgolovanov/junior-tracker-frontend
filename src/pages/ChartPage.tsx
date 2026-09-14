@@ -194,13 +194,11 @@ function CurrentStatus({ data, predictions, nowMin, today }: {
   const sleepMinsLeft = sleepPred ? localOrd(sleepPred.end_dt) - nowOrd! : null;
   const awakeMinsLeft = awakePred ? localOrd(awakePred.end_dt) - nowOrd! : null;
 
-  if (data.current_sleep_minutes <= 0 && data.current_awake_minutes <= 0) return null;
-
   return (
     <>
-      {data.is_currently_asleep && data.current_sleep_minutes > 0 && (
+      {data.is_currently_asleep && (
         <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
-          {t("chart_currentSleep")} {formatDuration(data.current_sleep_minutes)}
+          {t("chart_currentSleep")} {formatDuration(Math.max(0, data.current_sleep_minutes))}
           {sleepPred && sleepMinsLeft !== null && sleepMinsLeft > 0 && (
             <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
               (~{sleepPred.end_dt.slice(11, 16)}, {t("chart_in")} {formatDuration(sleepMinsLeft)})
@@ -208,9 +206,9 @@ function CurrentStatus({ data, predictions, nowMin, today }: {
           )}
         </div>
       )}
-      {!data.is_currently_asleep && data.current_awake_minutes > 0 && (
+      {!data.is_currently_asleep && (
         <div style={{ background: "var(--surface2)", borderRadius: 6, padding: "4px 10px", display: "flex", alignItems: "center", gap: 6 }}>
-          {t("chart_currentAwake")} {formatDuration(data.current_awake_minutes)}
+          {t("chart_currentAwake")} {formatDuration(Math.max(0, data.current_awake_minutes))}
           {awakePred && awakeMinsLeft !== null && awakeMinsLeft > 0 && (
             <span style={{ color: "var(--muted)", fontSize: "0.9em" }}>
               (~{awakePred.end_dt.slice(11, 16)}, {t("chart_in")} {formatDuration(awakeMinsLeft)})

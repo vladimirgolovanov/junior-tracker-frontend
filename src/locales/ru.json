@@ -301,5 +301,7 @@
   "export_share": "Поделиться",
   "export_savedToDownloads": "Сохранено в «Загрузки»",
   "export_open": "Открыть",
-  "export_saveError": "Не удалось сохранить файл"
+  "export_saveError": "Не удалось сохранить файл",
+  "export_openError": "Не удалось открыть файл",
+  "export_shareError": "Не удалось поделиться файлом"
 }
