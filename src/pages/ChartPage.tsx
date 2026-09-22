@@ -357,6 +357,10 @@ export default function ChartPage() {
   // (growing cached totals by the hours since the snapshot would be wrong).
   const [dashboardFresh, setDashboardFresh] = useState(false);
   const [dashboardError, setDashboardError] = useState(false);
+  // Only surface the offline text once we've stayed on non-fresh data for a
+  // full second. On a healthy connection the 200 lands in well under 1s, which
+  // clears the timer before it fires, so the badge never flashes.
+  const [offlineConfirmed, setOfflineConfirmed] = useState(false);
   const dashboardFetchedAt = useRef<number>(0);
   const { dateFrom, dateTo } = getLast15Days(todayParam);
 
@@ -423,6 +427,15 @@ export default function ChartPage() {
   useEffect(() => {
     fetchDashboard();
   }, [firstChildId, token, todayParam]);
+
+  useEffect(() => {
+    if (todayParam || dashboardFresh) {
+      setOfflineConfirmed(false);
+      return;
+    }
+    const id = setTimeout(() => setOfflineConfirmed(true), 1000);
+    return () => clearTimeout(id);
+  }, [dashboardFresh, todayParam]);
 
   useEffect(() => {
     fetchPredictions();
@@ -545,7 +558,7 @@ export default function ChartPage() {
         </div>
       )}
 
-      {dashboard && !todayParam && !dashboardFresh && (
+      {dashboard && !todayParam && !dashboardFresh && offlineConfirmed && (
         <div style={{ margin: "8px 0", padding: "4px 10px", borderRadius: 6, background: "var(--surface2)", color: "var(--muted)", fontSize: "0.9em", display: "inline-block" }}>
           {t("chart_staleOffline")}
         </div>
@@ -559,7 +572,7 @@ export default function ChartPage() {
         </div>
       )}
 
-      {!dashboard && dashboardError && !todayParam && (
+      {!dashboard && dashboardError && !todayParam && offlineConfirmed && (
         <div style={{ margin: "12px 0", color: "var(--muted)" }}>{t("chart_offlineNoData")}</div>
       )}
 
