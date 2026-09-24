@@ -240,6 +240,12 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
   const totalAwake = data.total_awake_minutes + (currentSeg?.state === "awake" ? grown : 0);
   const cycle = data.cycle_length_minutes + grown;
 
+  // Completed night awakenings, listed separately above bedtime. Day awake stays
+  // in the segment list below; the current (running) awake is the "woke up" line.
+  const nightWakings = data.segments.filter(
+    (s) => s.state === "awake" && s.day_part === "night" && !s.is_current,
+  );
+
   const hasData =
     data.segments.length > 0 ||
     data.total_sleep_minutes > 0 ||
@@ -260,6 +266,17 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
     <div>
       <strong style={{ display: "block", marginBottom: 8 }}>{title}</strong>
 
+      {nightWakings.length > 0 && (
+        <div style={{ marginBottom: 8 }}>
+          <div>{t("chart_nightWakings")}</div>
+          {nightWakings.map((seg, i) => (
+            <div key={i} style={{ color: "var(--muted)" }}>
+              {seg.start}–{seg.end} &nbsp; {formatDuration(seg.minutes)}
+            </div>
+          ))}
+        </div>
+      )}
+
       {data.bedtime && (
         <div style={{ marginBottom: 8, borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
           {t("chart_bedtime")} {data.bedtime}
@@ -279,7 +296,7 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
       )}
 
       {data.segments.map((seg, i) => {
-        if (seg.state === "awake" && !seg.is_current) {
+        if (seg.state === "awake" && seg.day_part === "day" && !seg.is_current) {
           return <div key={i}>{t("chart_awake")} {formatDuration(seg.minutes)}</div>;
         }
         if (seg.state === "sleep" && seg.day_part === "day" && !seg.is_current) {
