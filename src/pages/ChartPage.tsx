@@ -165,6 +165,34 @@ function minutesToTimeLabel(minutes: number): string {
   return `${h}:${String(m).padStart(2, "0")}`;
 }
 
+// The backend splits completed sleeps at local midnight, but leaves an unfinished
+// sleep (end === null) as a single interval pinned to its start day. So an ongoing
+// overnight sleep never reaches today's row, and on its start-day row the frontend
+// would size it against today's "now" minute (negative width). Mirror the backend's
+// midnight split on the client for that one open interval: past-day pieces close at
+// midnight ("...00:00:00" → right edge via the endMinRaw===0 rule) and today's piece
+// stays open (end === null → grows to "now").
+function expandOpenOvernight(rows: ChartRow[], today: string | null): ChartRow[] {
+  if (!today) return rows;
+  const out: ChartRow[] = [];
+  for (const r of rows) {
+    const startDay = localDtToDay(r.start);
+    if (r.end === null && startDay < today) {
+      let d = startDay;
+      out.push({ day: d, start: r.start, end: `${addDays(d, 1)} 00:00:00` });
+      d = addDays(d, 1);
+      while (d < today) {
+        out.push({ day: d, start: `${d} 00:00:00`, end: `${addDays(d, 1)} 00:00:00` });
+        d = addDays(d, 1);
+      }
+      out.push({ day: today, start: `${today} 00:00:00`, end: null });
+    } else {
+      out.push(r);
+    }
+  }
+  return out;
+}
+
 // --- CurrentStatus component (running current sleep / awake + prediction) ---
 
 function CurrentStatus({ data, predictions, nowMin, today }: {
@@ -512,13 +540,24 @@ export default function ChartPage() {
     );
   }
 
-  // Group rows by day
+  // Group rows by day. In the live view, expand an ongoing overnight sleep into
+  // per-day pieces so it renders on both its start day and today (see
+  // expandOpenOvernight); the historical (?today=) range never holds an open
+  // interval, so it uses the raw rows.
+  const displayRows = todayParam ? rows : expandOpenOvernight(rows, todayInTz);
   const byDay = new Map<string, ChartRow[]>();
-  for (const row of rows) {
+  for (const row of displayRows) {
     const list = byDay.get(row.day);
     if (list) list.push(row);
     else byDay.set(row.day, [row]);
   }
+
+  // Days to render, newest first. Today is always present in the live view so its
+  // row shows even without sleep data (the "now" line, predictions and today's
+  // event markers live inside that row). "YYYY-MM-DD" keys sort lexicographically.
+  const dayKeys = new Set(byDay.keys());
+  if (!todayParam && todayInTz) dayKeys.add(todayInTz);
+  const orderedDays = [...dayKeys].sort().reverse();
 
   const typeById = new Map(eventTypes.map((et) => [et.id, et]));
   const visibleLastEvents = (status?.last_events ?? []).filter(
@@ -593,7 +632,7 @@ export default function ChartPage() {
         <div style={{ margin: "12px 0", color: "var(--muted)" }}>{t("chart_offlineNoData")}</div>
       )}
 
-      {byDay.size > 0 && (
+      {orderedDays.length > 0 && (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
       <form onSubmit={handleSubmit} style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <label style={{ display: "none" }}>
@@ -636,7 +675,7 @@ export default function ChartPage() {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {byDay.size > 0 && (
+      {orderedDays.length > 0 && (
         <div
           ref={chartRef}
           style={{ marginTop: 16, position: "relative" }}
@@ -662,7 +701,9 @@ export default function ChartPage() {
               ))}
             </div>
           </div>
-          {[...byDay.entries()].reverse().map(([day, segments], index) => (
+          {orderedDays.map((day, index) => {
+            const segments = byDay.get(day) ?? [];
+            return (
             <div key={day} className="chart-day-row" style={{ display: "flex", alignItems: "center", marginBottom: 4 }}>
               <div
                 ref={(el) => { if (index === 0 && el) firstBarRef.current = el; }}
@@ -723,7 +764,7 @@ export default function ChartPage() {
                   }
                   const duration = endMin - startMin;
                   const left = (startMin / MINUTES_IN_DAY) * 100;
-                  const width = ((endMin - startMin) / MINUTES_IN_DAY) * 100;
+                  const width = Math.max(0, ((endMin - startMin) / MINUTES_IN_DAY) * 100);
                   const titleText = current
                       ? `${formatDuration(duration)} | ${minutesToTimeLabel(startMin)} – `
                       : `${formatDuration(duration)} | ${minutesToTimeLabel(startMin)} – ${minutesToTimeLabel(endMin)}`;
@@ -828,7 +869,8 @@ export default function ChartPage() {
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
           <div style={{ display: "flex", marginTop: 4 }}>
             <div style={{ flex: 1, position: "relative", height: 12, fontSize: 9, color: "var(--muted3)" }}>
               {Array.from({ length: 24 }, (_, i) => (
@@ -889,7 +931,7 @@ export default function ChartPage() {
         </div>
       )}
 
-      {byDay.size === 0 && !error && (
+      {orderedDays.length === 0 && !error && (
         <div style={{ marginTop: 16, color: "var(--muted)" }}>{t("chart_noData")}</div>
       )}
     </div>
