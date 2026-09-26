@@ -92,6 +92,8 @@
   "settings_childInfo": "Child info",
   "settings_name": "Name",
   "settings_timezone": "Timezone",
+  "settings_dayStart": "Day start",
+  "settings_dayEnd": "Day end",
   "settings_save": "Save",
   "settings_saving": "Saving...",
   "settings_eventTypes": "Event types",

@@ -92,6 +92,8 @@
   "settings_childInfo": "Данные ребёнка",
   "settings_name": "Имя",
   "settings_timezone": "Часовой пояс",
+  "settings_dayStart": "Начало дня",
+  "settings_dayEnd": "Конец дня",
   "settings_save": "Сохранить",
   "settings_saving": "Сохранение...",
   "settings_eventTypes": "Типы событий",

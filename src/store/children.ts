@@ -6,6 +6,8 @@ export interface Child {
   id: number;
   name: string;
   timezone?: string;
+  day_start?: string | null;
+  day_end?: string | null;
 }
 
 const flag = { fetching: false };

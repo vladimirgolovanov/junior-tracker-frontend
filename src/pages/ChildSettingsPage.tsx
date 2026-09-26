@@ -9,6 +9,8 @@ interface FreshChild {
   id: number;
   name: string;
   timezone?: string;
+  day_start?: string | null;
+  day_end?: string | null;
 }
 
 interface SettingsEventType {
@@ -39,6 +41,8 @@ export default function ChildSettingsPage() {
   const [selectedChildId, setSelectedChildId] = useState<number | null>(null);
   const [childName, setChildName] = useState("");
   const [childTimezone, setChildTimezone] = useState("");
+  const [childDayStart, setChildDayStart] = useState("");
+  const [childDayEnd, setChildDayEnd] = useState("");
   const [childSaveError, setChildSaveError] = useState<string | null>(null);
   const [childSaving, setChildSaving] = useState(false);
 
@@ -67,6 +71,8 @@ export default function ChildSettingsPage() {
           setSelectedChildId(data[0].id);
           setChildName(data[0].name);
           setChildTimezone(data[0].timezone ?? "");
+          setChildDayStart(data[0].day_start ?? "");
+          setChildDayEnd(data[0].day_end ?? "");
         }
       })
       .catch(() => {});
@@ -111,10 +117,12 @@ export default function ChildSettingsPage() {
       .finally(() => setEtLoading(false));
   }, [selectedChildId, token]);
 
-  function selectChild(child: { id: number; name: string; timezone?: string }) {
+  function selectChild(child: FreshChild) {
     setSelectedChildId(child.id);
     setChildName(child.name);
     setChildTimezone(child.timezone ?? "");
+    setChildDayStart(child.day_start ?? "");
+    setChildDayEnd(child.day_end ?? "");
     setChildSaveError(null);
   }
 
@@ -126,7 +134,12 @@ export default function ChildSettingsPage() {
       const r = await authedFetch(`/api/children/${selectedChildId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: childName, timezone: childTimezone || undefined }),
+        body: JSON.stringify({
+          name: childName,
+          timezone: childTimezone || undefined,
+          day_start: childDayStart || null,
+          day_end: childDayEnd || null,
+        }),
       });
       if (!r.ok) {
         const body = await r.json().catch(() => ({}));
@@ -273,6 +286,24 @@ export default function ChildSettingsPage() {
                 <option key={tz} value={tz}>{tz}</option>
               ))}
             </select>
+          </label>
+          <label>
+            {t("settings_dayStart")}
+            <input
+              type="time"
+              value={childDayStart}
+              onChange={(e) => setChildDayStart(e.target.value)}
+              style={{ display: "block", width: "100%", marginTop: 4 }}
+            />
+          </label>
+          <label>
+            {t("settings_dayEnd")}
+            <input
+              type="time"
+              value={childDayEnd}
+              onChange={(e) => setChildDayEnd(e.target.value)}
+              style={{ display: "block", width: "100%", marginTop: 4 }}
+            />
           </label>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button type="button" className="btn btn-primary" onClick={saveChild} disabled={childSaving}>
