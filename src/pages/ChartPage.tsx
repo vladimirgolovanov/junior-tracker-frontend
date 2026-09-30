@@ -671,7 +671,7 @@ export default function ChartPage() {
                 }}
               />
               <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: colorForEventType(et.color) }} />
-              {et.name}
+              {t(`et_${et.name}`, et.name)}
             </label>
           ))}
       </div>
