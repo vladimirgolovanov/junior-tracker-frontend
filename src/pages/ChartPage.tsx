@@ -552,10 +552,15 @@ export default function ChartPage() {
     else byDay.set(row.day, [row]);
   }
 
-  // Days to render, newest first. Today is always present in the live view so its
-  // row shows even without sleep data (the "now" line, predictions and today's
-  // event markers live inside that row). "YYYY-MM-DD" keys sort lexicographically.
+  // Days to render, newest first. A day is shown if it has sleep rows OR any
+  // additional event — otherwise a day whose only data is an additional-event
+  // marker would be dropped, since markers live inside a day row. Today is also
+  // always present in the live view (the "now" line and predictions live in its
+  // row). "YYYY-MM-DD" keys sort lexicographically.
   const dayKeys = new Set(byDay.keys());
+  for (const events of Object.values(additionalData)) {
+    for (const ev of events) dayKeys.add(localDtToDay(ev.occurred_at));
+  }
   if (!todayParam && todayInTz) dayKeys.add(todayInTz);
   const orderedDays = [...dayKeys].sort().reverse();
 
