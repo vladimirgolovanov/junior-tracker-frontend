@@ -93,7 +93,7 @@ export default function ChildSettingsPage() {
   useEffect(() => {
     if (selectedChildId === null) return;
     setEtLoading(true);
-    const url = new URL("/api/event_types/", window.location.origin);
+    const url = new URL("/api/v2/event_types/", window.location.origin);
     url.searchParams.set("child_id", String(selectedChildId));
     authedFetch(url.toString())
       .then((r) => r.json())

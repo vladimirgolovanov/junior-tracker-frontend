@@ -27,7 +27,7 @@ export const useEventTypesStore = create<EventTypesState>((set, get) => ({
   loadedForChildId: null,
   load: (childId: number) => {
     if (get().loadedForChildId === childId) return;
-    const url = new URL("/api/event_types/", window.location.origin);
+    const url = new URL("/api/v2/event_types/", window.location.origin);
     url.searchParams.set("child_id", String(childId));
     loadList<EventType>(url.toString(), flag, (eventTypes) => set({ eventTypes, loadedForChildId: childId }));
   },
