@@ -362,15 +362,19 @@ function DayColumn({ title, data, live = false, fetchedAtMs = 0 }: {
 
 const MINUTES_IN_DAY = 24 * 60;
 
-function toDateString(d: Date): string {
-  return d.toISOString().slice(0, 10);
+// Browser-local "YYYY-MM-DD" from calendar components (never UTC). Only a
+// last-resort anchor for a first-ever cold load with no status snapshot yet —
+// the real "today" comes from the backend via status (see todayInTz).
+function todayLocal(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
-function getLast15Days(anchor?: string): { dateFrom: string; dateTo: string } {
-  const today = anchor ? new Date(anchor) : new Date();
-  const from = new Date(today);
-  from.setDate(today.getDate() - 14);
-  return { dateFrom: toDateString(from), dateTo: toDateString(today) };
+// 15-day window ending on anchorDay (inclusive), via timezone-free string math.
+function getLast15Days(anchorDay: string): { dateFrom: string; dateTo: string } {
+  return { dateFrom: addDays(anchorDay, -14), dateTo: anchorDay };
 }
 
 export default function ChartPage() {
@@ -411,7 +415,6 @@ export default function ChartPage() {
   // clears the timer before it fires, so the badge never flashes.
   const [offlineConfirmed, setOfflineConfirmed] = useState(false);
   const dashboardFetchedAt = useRef<number>(0);
-  const { dateFrom, dateTo } = getLast15Days(todayParam);
 
   const firstChildId = children[0]?.id;
   const { status, fetchedAt: statusFetchedAt } = useStatus(firstChildId);
@@ -427,6 +430,11 @@ export default function ChartPage() {
     todayInTz = addDays(status.today, Math.floor(raw / MINUTES_IN_DAY));
   }
   const nowOrd = currentMinutes !== null && todayInTz ? dayIndex(todayInTz) * MINUTES_IN_DAY + currentMinutes : null;
+
+  // Default date-filter window ends on the same "today" the chart highlights:
+  // the historical ?today= anchor if present, else the backend-derived local day
+  // (todayInTz), else the browser's local day for a first-ever cold load.
+  const { dateFrom, dateTo } = getLast15Days(todayParam ?? todayInTz ?? todayLocal());
 
   // Local once-a-minute heartbeat: forces a re-render so the render-time "now"
   // values (currentMinutes / todayInTz / nowOrd) advance — the "now" line,
@@ -516,7 +524,9 @@ export default function ChartPage() {
   useEffect(() => {
     if (!firstChildId) return;
     loadChart(firstChildId, dateFrom, dateTo, selectedAdditionalIds);
-  }, [firstChildId, todayParam, selectedAdditionalIds]);
+    // dateFrom/dateTo included so a late-resolving status anchor (todayInTz) reloads
+    // the correct range; identical strings across renders don't re-trigger the fetch.
+  }, [firstChildId, todayParam, dateFrom, dateTo, selectedAdditionalIds]);
 
   // Steady-state trigger: when useStatus reports a sleep-status flip, refresh the
   // heavy data once. Completed segments, dashboard totals and predictions change
@@ -655,10 +665,10 @@ export default function ChartPage() {
           </select>
         </label>
         <label>
-          {t("chart_dateFrom")} <input name="date_from" type="date" defaultValue={dateFrom} required />
+          {t("chart_dateFrom")} <input key={dateFrom} name="date_from" type="date" defaultValue={dateFrom} required />
         </label>
         <label>
-          {t("chart_dateTo")} <input name="date_to" type="date" defaultValue={dateTo} required />
+          {t("chart_dateTo")} <input key={dateTo} name="date_to" type="date" defaultValue={dateTo} required />
         </label>
         <button type="submit">{t("chart_load")}</button>
       </form>
