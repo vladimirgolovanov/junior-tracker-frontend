@@ -151,7 +151,11 @@ function formatDuration(minutes: number | undefined | null): string {
 
 
 function colorForEventType(color: string | null): string {
-  return color ? `#${color}` : "#000";
+  if (!color) return "#000";
+  // Some accounts store the color already prefixed with "#"; adding another "#"
+  // yields an invalid CSS color ("##2ecc71") that the browser drops, leaving the
+  // marker with no background — so only prepend "#" when it's missing.
+  return color.startsWith("#") ? color : `#${color}`;
 }
 
 function formatDayLabel(dateStr: string, months: string[]): string {
