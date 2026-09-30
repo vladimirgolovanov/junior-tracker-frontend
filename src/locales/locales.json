@@ -1,0 +1,56 @@
+[
+  {
+    "code": "en",
+    "file": "en.json",
+    "name": "English",
+    "nativeName": "English"
+  },
+  {
+    "code": "ru",
+    "file": "ru.json",
+    "name": "Russian",
+    "nativeName": "Русский"
+  },
+  {
+    "code": "es",
+    "file": "es.json",
+    "name": "Spanish",
+    "nativeName": "Español"
+  },
+  {
+    "code": "it",
+    "file": "it.json",
+    "name": "Italian",
+    "nativeName": "Italiano"
+  },
+  {
+    "code": "de",
+    "file": "de.json",
+    "name": "German",
+    "nativeName": "Deutsch"
+  },
+  {
+    "code": "fr",
+    "file": "fr.json",
+    "name": "French",
+    "nativeName": "Français"
+  },
+  {
+    "code": "sr",
+    "file": "sr.json",
+    "name": "Serbian",
+    "nativeName": "Srpski"
+  },
+  {
+    "code": "pt-BR",
+    "file": "pt-BR.json",
+    "name": "Portuguese (Brazil)",
+    "nativeName": "Português (Brasil)"
+  },
+  {
+    "code": "tr",
+    "file": "tr.json",
+    "name": "Turkish",
+    "nativeName": "Türkçe"
+  }
+]

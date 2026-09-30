@@ -102,7 +102,7 @@ export default function Layout() {
               )}
             </nav>
             <div className="drawer-footer">
-              <LangToggle />
+              <LangToggle placement="up" />
               <ThemeToggle />
               {token && (
                 <button type="button" style={navBtnStyle} onClick={() => { handleLogout(); closeMenu(); }}>
