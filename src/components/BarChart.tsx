@@ -1,13 +1,18 @@
 // Shared bar chart used by the Sleep and Bottle stats pages. Renders up to 14 days
 // as two rows of 7 on narrow screens and a single row on wide ones (CSS-driven).
+import i18n from "../i18n";
 
 function fmtDuration(minutes: number): string {
-  if (!minutes) return "0m";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h && m) return `${h}h\n${m}m`;
-  if (h) return `${h}h`;
-  return `${m}m`;
+  // Unit labels from i18n; the pages rendering this chart use useTranslation(), so a
+  // language change re-renders them and re-runs this with the current language.
+  const h = i18n.t("common_hoursShort");
+  const m = i18n.t("common_minutesShort");
+  if (!minutes) return `0${m}`;
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hrs && mins) return `${hrs}${h}\n${mins}${m}`;
+  if (hrs) return `${hrs}${h}`;
+  return `${mins}${m}`;
 }
 
 function fmtDate(dateStr: string): string {

@@ -8,6 +8,7 @@ import { useEventTypesStore } from "../store/eventTypes";
 import { authedFetch } from "../api/client";
 import { readSnapshot, writeSnapshot } from "../api/snapshot";
 import useStatus from "../hooks/useStatus";
+import i18n from "../i18n";
 
 // iOS Safari only opens the software keyboard from within a user gesture.
 // The quick-add links navigate to /add-event, where the target field is
@@ -142,10 +143,15 @@ function localOrd(dt: string): number {
 }
 
 function formatDuration(minutes: number | undefined | null): string {
-  if (!minutes) return "0m";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h ? `${h}h ${m}m` : `${m}m`;
+  // Unit labels come from i18n (see common_hoursShort/common_minutesShort). Read from the
+  // singleton so every call site stays unchanged; the components that render durations all
+  // use useTranslation(), so they re-render (and re-run this) when the language changes.
+  const h = i18n.t("common_hoursShort");
+  const m = i18n.t("common_minutesShort");
+  if (!minutes) return `0${m}`;
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return hrs ? `${hrs}${h} ${mins}${m}` : `${mins}${m}`;
 }
 
 
@@ -598,8 +604,8 @@ export default function ChartPage() {
             {visibleLastEvents.map((ev, i) => (
               <div key={i} style={{ background: "var(--surface)", borderRadius: 6, padding: "4px 10px", font: "inherit", display: "flex", gap: 6, alignItems: "center" }}>
                 <span style={{ fontWeight: 500 }}>{t(`et_${ev.name}`, ev.name)}</span>
-                <span style={{ color: "var(--muted)" }}>{formatDuration(nowOrd !== null ? Math.max(0, nowOrd - localOrd(ev.occurred_at)) : 0)} ago</span>
-                {ev.volume != null && <span style={{ color: "var(--muted2)" }}>{ev.volume} ml</span>}
+                <span style={{ color: "var(--muted)" }}>{t("common_ago", { duration: formatDuration(nowOrd !== null ? Math.max(0, nowOrd - localOrd(ev.occurred_at)) : 0) })}</span>
+                {ev.volume != null && <span style={{ color: "var(--muted2)" }}>{ev.volume} {t("common_ml")}</span>}
                 {ev.description && <span style={{ color: "var(--muted2)" }}>{ev.description}</span>}
               </div>
             ))}

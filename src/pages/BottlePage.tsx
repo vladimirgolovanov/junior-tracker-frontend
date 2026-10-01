@@ -120,7 +120,7 @@ export default function BottlePage() {
             <BarChart
               days={formulaDays.map((d) => ({ date: d.date, value: d.total_volume }))}
               color="#e07b39"
-              fmtValue={(v) => `${v}ml`}
+              fmtValue={(v) => `${v}${t("common_ml")}`}
             />
           </div>
           <div className="stats-section">

@@ -154,7 +154,7 @@
   "common_serverError": "Greška servera {{code}}",
   "common_serverErrorRetry": "Greška servera. Pokušajte ponovo.",
   "common_offlineBanner": "Van mreže — prikazuju se poslednji sačuvani podaci",
-  "common_hoursShort": "č",
+  "common_hoursShort": "s",
   "common_minutesShort": "min",
   "common_ago": "pre {{duration}}",
   "nav_dashboard": "Pregled",
