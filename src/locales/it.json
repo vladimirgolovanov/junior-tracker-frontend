@@ -260,6 +260,7 @@
   "events_colTime": "Ora",
   "events_colType": "Tipo",
   "events_delete": "Elimina",
+  "events_edit": "Modifica",
   "nav_export": "Esporta",
   "export_title": "Esporta",
   "export_type": "Tipo",

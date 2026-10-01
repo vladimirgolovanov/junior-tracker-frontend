@@ -276,6 +276,7 @@
   "events_colTime": "Время",
   "events_colType": "Тип",
   "events_delete": "Удалить",
+  "events_edit": "Изменить",
 
   "nav_export": "Экспорт",
   "export_title": "Экспорт данных",

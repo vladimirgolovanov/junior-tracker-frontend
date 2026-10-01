@@ -4,11 +4,12 @@ import { useAuthStore } from "../store/auth";
 import { useChildrenStore } from "../store/children";
 import { useEventTypesStore } from "../store/eventTypes";
 import { authedFetch } from "../api/client";
+import EditEventModal from "../components/EditEventModal";
 
 // Matches the backend EventItem. `occurred_at` is the child's naive local time
-// (no timezone) — we edit it verbatim via <input type="datetime-local"> and never
-// run it through Date/toISOString, so no timezone math happens on the frontend.
-interface EventItem {
+// (no timezone) as returned by the GET, so we display it verbatim as wall-clock.
+// On save the editor converts it to UTC (see EditEventModal) — a PATCH-only rule.
+export interface EventItem {
   id: number;
   occurred_at: string;
   child_id: number;
@@ -18,34 +19,16 @@ interface EventItem {
   event_type_id: number;
 }
 
-interface RowEdit {
-  occurred_at: string;
-  volume: string;
-  description: string;
-}
-
 function localDateStr(offsetDays = 0): string {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
   return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
 }
 
-// "2026-09-01T14:30:00" (or with a space separator) -> "2026-09-01T14:30" for the input.
-function toInputValue(occurredAt: string): string {
-  return occurredAt.replace(" ", "T").slice(0, 16);
-}
-
-// "2026-09-01T14:30" -> "2026-09-01T14:30:00"; leave alone if seconds already present.
-function fromInputValue(value: string): string {
-  return value.length === 16 ? `${value}:00` : value;
-}
-
-function makeEdit(ev: EventItem): RowEdit {
-  return {
-    occurred_at: toInputValue(ev.occurred_at),
-    volume: ev.volume == null ? "" : String(ev.volume),
-    description: ev.description ?? "",
-  };
+// Naive-local "2026-09-01T14:30:00" -> "2026-09-01 14:30" for display (no tz math).
+function formatOccurred(occurredAt: string): string {
+  const s = occurredAt.replace("T", " ");
+  return s.length >= 16 ? s.slice(0, 16) : s;
 }
 
 export default function EventsPage() {
@@ -63,8 +46,7 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [rowEdits, setRowEdits] = useState<Record<number, RowEdit>>({});
-  const [rowSaving, setRowSaving] = useState<Record<number, boolean>>({});
+  const [editing, setEditing] = useState<EventItem | null>(null);
   const [rowDeleting, setRowDeleting] = useState<Record<number, boolean>>({});
   const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
 
@@ -96,49 +78,11 @@ export default function EventsPage() {
         // occurred_at is an ISO-like naive string, so a lexicographic sort is chronological.
         list.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
         setEvents(list);
-        setRowEdits(Object.fromEntries(list.map((ev) => [ev.id, makeEdit(ev)])));
         setRowErrors({});
       })
       .catch((e) => setError(e instanceof Error ? e.message : t("settings_networkError")))
       .finally(() => setLoading(false));
   }, [childId, token, dateFrom, dateTo, t]);
-
-  function updateRow(id: number, field: keyof RowEdit, value: string) {
-    setRowEdits((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
-  }
-
-  async function saveRow(id: number) {
-    const edit = rowEdits[id];
-    if (!edit) return;
-    setRowSaving((prev) => ({ ...prev, [id]: true }));
-    setRowErrors((prev) => ({ ...prev, [id]: "" }));
-    try {
-      const body = {
-        occurred_at: fromInputValue(edit.occurred_at),
-        volume: edit.volume.trim() === "" ? null : Number(edit.volume),
-        description: edit.description.trim() === "" ? null : edit.description,
-      };
-      const r = await authedFetch(`/api/events/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!r.ok) {
-        const b = await r.json().catch(() => ({}));
-        setRowErrors((prev) => ({ ...prev, [id]: b?.detail ?? t("settings_errorStatus", { status: r.status }) }));
-      } else {
-        const updated: EventItem | null = await r.json().catch(() => null);
-        if (updated && typeof updated.id === "number") {
-          setEvents((prev) => prev.map((e) => (e.id === id ? updated : e)));
-          setRowEdits((prev) => ({ ...prev, [id]: makeEdit(updated) }));
-        }
-      }
-    } catch {
-      setRowErrors((prev) => ({ ...prev, [id]: t("settings_networkError") }));
-    } finally {
-      setRowSaving((prev) => ({ ...prev, [id]: false }));
-    }
-  }
 
   async function deleteRow(id: number) {
     if (!window.confirm(t("events_deleteBody"))) return;
@@ -197,7 +141,7 @@ export default function EventsPage() {
 
       {events.length > 0 && (
         <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <table className="events-table">
             <thead>
               <tr>
                 <th style={th}>{t("events_colType")}</th>
@@ -209,11 +153,7 @@ export default function EventsPage() {
             </thead>
             <tbody>
               {events.map((ev) => {
-                const edit = rowEdits[ev.id];
-                if (!edit) return null;
                 const et = typeById.get(ev.event_type_id);
-                const showVolume = et ? et.volume_input : ev.volume != null;
-                const showDesc = et ? et.describe_input : ev.description != null;
                 return (
                   <tr key={ev.id}>
                     <td style={td}>
@@ -230,48 +170,22 @@ export default function EventsPage() {
                         {et ? t(`et_${et.name}`, et.name) : `#${ev.event_type_id}`}
                       </span>
                     </td>
+                    <td style={{ ...td, whiteSpace: "nowrap" }}>{formatOccurred(ev.occurred_at)}</td>
                     <td style={td}>
-                      <input
-                        type="datetime-local"
-                        value={edit.occurred_at}
-                        onChange={(e) => updateRow(ev.id, "occurred_at", e.target.value)}
-                      />
+                      {ev.volume != null ? ev.volume : <span style={{ color: "var(--muted)" }}>—</span>}
                     </td>
                     <td style={td}>
-                      {showVolume ? (
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          value={edit.volume}
-                          onChange={(e) => updateRow(ev.id, "volume", e.target.value)}
-                          style={{ width: 70 }}
-                        />
-                      ) : (
-                        <span style={{ color: "var(--muted)" }}>—</span>
-                      )}
+                      {ev.description ? ev.description : <span style={{ color: "var(--muted)" }}>—</span>}
                     </td>
-                    <td style={td}>
-                      {showDesc ? (
-                        <input
-                          type="text"
-                          value={edit.description}
-                          onChange={(e) => updateRow(ev.id, "description", e.target.value)}
-                          style={{ width: "100%", minWidth: 120 }}
-                        />
-                      ) : (
-                        <span style={{ color: "var(--muted)" }}>—</span>
-                      )}
-                    </td>
-                    <td style={{ ...td, whiteSpace: "nowrap" }}>
-                      <button type="button" onClick={() => saveRow(ev.id)} disabled={rowSaving[ev.id]}>
-                        {rowSaving[ev.id] ? t("settings_saving") : t("settings_save")}
+                    <td style={{ ...td, whiteSpace: "nowrap", textAlign: "right" }}>
+                      <button type="button" className="row-btn" onClick={() => setEditing(ev)}>
+                        {t("events_edit")}
                       </button>{" "}
                       <button
                         type="button"
+                        className="row-btn danger"
                         onClick={() => deleteRow(ev.id)}
                         disabled={rowDeleting[ev.id]}
-                        style={{ color: "red" }}
                       >
                         {t("events_delete")}
                       </button>
@@ -286,6 +200,19 @@ export default function EventsPage() {
           </table>
         </div>
       )}
+
+      {editing && childId !== null && (
+        <EditEventModal
+          event={editing}
+          eventType={typeById.get(editing.event_type_id)}
+          childId={childId}
+          onClose={() => setEditing(null)}
+          onSaved={(updated) => {
+            setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)));
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -298,6 +225,6 @@ const th: React.CSSProperties = {
 };
 
 const td: React.CSSProperties = {
-  padding: "4px 8px",
+  padding: "8px",
   verticalAlign: "top",
 };

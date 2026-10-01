@@ -859,3 +859,114 @@ th, td {
     margin-bottom: 16px;
   }
 }
+
+/* Modal: centered dialog over a dimmed backdrop (used by the event editor) */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modal-card {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  width: min(92vw, 420px);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 16px 16px 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--muted2);
+  font-size: 1.2em;
+  line-height: 1;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px 16px;
+}
+
+/* Events management table */
+.events-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.events-table tbody tr {
+  border-top: 1px solid var(--border-muted);
+}
+
+.events-table tbody tr:hover {
+  background: var(--surface2);
+}
+
+/* Compact per-row action buttons (Edit / Delete) */
+.row-btn {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.row-btn:hover:not(:disabled) {
+  background: var(--surface2);
+}
+
+.row-btn.danger {
+  color: #d9534f;
+  border-color: transparent;
+  background: none;
+}
+
+.row-btn.danger:hover:not(:disabled) {
+  background: var(--surface2);
+}
+
+.row-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -276,6 +276,7 @@
   "events_colTime": "Time",
   "events_colType": "Type",
   "events_delete": "Delete",
+  "events_edit": "Edit",
 
   "nav_export": "Export",
   "export_title": "Export",
