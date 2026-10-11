@@ -262,6 +262,7 @@
   "events_delete": "Eliminar",
   "events_edit": "Editar",
   "nav_export": "Exportar",
+  "nav_language": "Idioma",
   "export_title": "Exportar",
   "export_type": "Tipo",
   "export_typeEvents": "Eventos",
@@ -290,5 +291,15 @@
   "export_open": "Abrir",
   "export_saveError": "No se pudo guardar el archivo",
   "export_openError": "No se pudo abrir el archivo",
-  "export_shareError": "No se pudo compartir el archivo"
+  "export_shareError": "No se pudo compartir el archivo",
+  "nav_about": "Acerca de",
+  "about_title": "Acerca de",
+  "about_body": "",
+  "feedback_title": "Enviar comentarios",
+  "feedback_placeholder": "Cuéntanos qué opinas…",
+  "feedback_submit": "Enviar",
+  "feedback_sending": "Enviando…",
+  "feedback_success": "¡Gracias! Tus comentarios se han enviado.",
+  "feedback_errorStatus": "Error {{status}}",
+  "feedback_networkError": "Error de red"
 }

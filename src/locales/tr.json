@@ -262,6 +262,7 @@
   "events_delete": "Sil",
   "events_edit": "Düzenle",
   "nav_export": "Dışa aktar",
+  "nav_language": "Dil",
   "export_title": "Dışa aktar",
   "export_type": "Tür",
   "export_typeEvents": "Etkinlikler",
@@ -290,5 +291,15 @@
   "export_open": "Aç",
   "export_saveError": "Dosya kaydedilemedi",
   "export_openError": "Dosya açılamadı",
-  "export_shareError": "Dosya paylaşılamadı"
+  "export_shareError": "Dosya paylaşılamadı",
+  "nav_about": "Hakkında",
+  "about_title": "Hakkında",
+  "about_body": "",
+  "feedback_title": "Geri bildirim gönder",
+  "feedback_placeholder": "Ne düşündüğünüzü söyleyin…",
+  "feedback_submit": "Gönder",
+  "feedback_sending": "Gönderiliyor…",
+  "feedback_success": "Teşekkürler! Geri bildiriminiz gönderildi.",
+  "feedback_errorStatus": "Hata {{status}}",
+  "feedback_networkError": "Ağ hatası"
 }

@@ -262,6 +262,7 @@
   "events_delete": "Löschen",
   "events_edit": "Bearbeiten",
   "nav_export": "Export",
+  "nav_language": "Sprache",
   "export_title": "Export",
   "export_type": "Typ",
   "export_typeEvents": "Ereignisse",
@@ -290,5 +291,15 @@
   "export_open": "Öffnen",
   "export_saveError": "Datei konnte nicht gespeichert werden",
   "export_openError": "Datei konnte nicht geöffnet werden",
-  "export_shareError": "Datei konnte nicht geteilt werden"
+  "export_shareError": "Datei konnte nicht geteilt werden",
+  "nav_about": "Über",
+  "about_title": "Über",
+  "about_body": "",
+  "feedback_title": "Feedback senden",
+  "feedback_placeholder": "Sag uns, was du denkst…",
+  "feedback_submit": "Senden",
+  "feedback_sending": "Wird gesendet…",
+  "feedback_success": "Danke! Dein Feedback wurde gesendet.",
+  "feedback_errorStatus": "Fehler {{status}}",
+  "feedback_networkError": "Netzwerkfehler"
 }

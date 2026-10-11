@@ -279,6 +279,7 @@
   "events_edit": "Изменить",
 
   "nav_export": "Экспорт",
+  "nav_language": "Язык",
   "export_title": "Экспорт данных",
   "export_type": "Тип",
   "export_typeEvents": "События",
@@ -307,5 +308,15 @@
   "export_open": "Открыть",
   "export_saveError": "Не удалось сохранить файл",
   "export_openError": "Не удалось открыть файл",
-  "export_shareError": "Не удалось поделиться файлом"
+  "export_shareError": "Не удалось поделиться файлом",
+  "nav_about": "О приложении",
+  "about_title": "О приложении",
+  "about_body": "",
+  "feedback_title": "Обратная связь",
+  "feedback_placeholder": "Расскажите, что думаете…",
+  "feedback_submit": "Отправить",
+  "feedback_sending": "Отправка…",
+  "feedback_success": "Спасибо! Ваш отзыв отправлен.",
+  "feedback_errorStatus": "Ошибка {{status}}",
+  "feedback_networkError": "Ошибка сети"
 }

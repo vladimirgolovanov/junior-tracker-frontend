@@ -262,6 +262,7 @@
   "events_delete": "Obriši",
   "events_edit": "Izmeni",
   "nav_export": "Izvoz",
+  "nav_language": "Jezik",
   "export_title": "Izvoz",
   "export_type": "Tip",
   "export_typeEvents": "Događaji",
@@ -290,5 +291,15 @@
   "export_open": "Otvori",
   "export_saveError": "Nije moguće sačuvati datoteku",
   "export_openError": "Nije moguće otvoriti datoteku",
-  "export_shareError": "Nije moguće podeliti datoteku"
+  "export_shareError": "Nije moguće podeliti datoteku",
+  "nav_about": "O aplikaciji",
+  "about_title": "O aplikaciji",
+  "about_body": "",
+  "feedback_title": "Pošaljite povratne informacije",
+  "feedback_placeholder": "Recite nam šta mislite…",
+  "feedback_submit": "Pošalji",
+  "feedback_sending": "Slanje…",
+  "feedback_success": "Hvala! Vaše povratne informacije su poslate.",
+  "feedback_errorStatus": "Greška {{status}}",
+  "feedback_networkError": "Greška mreže"
 }

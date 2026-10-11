@@ -11,6 +11,7 @@ import BottlePage from "./pages/BottlePage";
 import InvitePage from "./pages/InvitePage";
 import ExportPage from "./pages/ExportPage";
 import EventsPage from "./pages/EventsPage";
+import AboutPage from "./pages/AboutPage";
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
             <Route path="/invite" element={<InvitePage />} />
             <Route path="/export" element={<ExportPage />} />
             <Route path="/events" element={<EventsPage />} />
+            <Route path="/about" element={<AboutPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/chart" replace />} />
         </Route>

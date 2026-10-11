@@ -92,6 +92,7 @@ export default function Layout() {
                   <Link to="/events" onClick={closeMenu}>{t("nav_events")}</Link>
                   <Link to="/export" onClick={closeMenu}>{t("nav_export")}</Link>
                   <Link to="/invite" onClick={closeMenu}>{t("nav_invite")}</Link>
+                  <Link to="/about" onClick={closeMenu}>{t("nav_about")}</Link>
                   <Link to="/child-settings" onClick={closeMenu}>{t("nav_settings")}</Link>
                 </>
               ) : (

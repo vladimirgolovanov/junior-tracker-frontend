@@ -279,6 +279,7 @@
   "events_edit": "Edit",
 
   "nav_export": "Export",
+  "nav_language": "Language",
   "export_title": "Export",
   "export_type": "Type",
   "export_typeEvents": "Events",
@@ -307,5 +308,15 @@
   "export_open": "Open",
   "export_saveError": "Couldn't save file",
   "export_openError": "Couldn't open the file",
-  "export_shareError": "Couldn't share the file"
+  "export_shareError": "Couldn't share the file",
+  "nav_about": "About",
+  "about_title": "About",
+  "about_body": "",
+  "feedback_title": "Send feedback",
+  "feedback_placeholder": "Tell us what you think…",
+  "feedback_submit": "Send",
+  "feedback_sending": "Sending…",
+  "feedback_success": "Thanks! Your feedback has been sent.",
+  "feedback_errorStatus": "Error {{status}}",
+  "feedback_networkError": "Network error"
 }
