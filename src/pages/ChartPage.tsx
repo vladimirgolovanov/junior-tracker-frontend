@@ -164,6 +164,19 @@ function colorForEventType(color: string | null): string {
   return color.startsWith("#") ? color : `#${color}`;
 }
 
+// Volume-sized event dots: area ∝ volume, so diameter ∝ sqrt(volume). The largest
+// volume in the loaded window maps to DOT_MAX_PX; dots without a volume keep the
+// default size.
+const DOT_DEFAULT_PX = 6;
+const DOT_MIN_PX = 5;
+const DOT_MAX_PX = 14;
+
+function volumeToDiameter(volume: number | null | undefined, maxVolume: number): number {
+  if (volume == null || volume <= 0) return DOT_DEFAULT_PX;
+  const frac = Math.min(1, volume / maxVolume);
+  return Math.round(DOT_MIN_PX + Math.sqrt(frac) * (DOT_MAX_PX - DOT_MIN_PX));
+}
+
 function formatDayLabel(dateStr: string, months: string[]): string {
   const [, month, day] = dateStr.split("-").map(Number);
   return `${day} ${months[month - 1]}`;
@@ -565,6 +578,16 @@ export default function ChartPage() {
   // expandOpenOvernight); the historical (?today=) range never holds an open
   // interval, so it uses the raw rows.
   const displayRows = todayParam ? rows : expandOpenOvernight(rows, todayInTz);
+
+  // Largest feeding volume across the loaded window (the "100%" reference for dot
+  // size); floored at 1 so division is always safe.
+  let maxVolume = 1;
+  for (const events of Object.values(additionalData)) {
+    for (const ev of events) {
+      if (ev.volume != null && ev.volume > maxVolume) maxVolume = ev.volume;
+    }
+  }
+
   const byDay = new Map<string, ChartRow[]>();
   for (const row of displayRows) {
     const list = byDay.get(row.day);
@@ -875,6 +898,7 @@ export default function ChartPage() {
                           />
                         );
                       }
+                      const size = volumeToDiameter(ev.volume, maxVolume);
                       return (
                         <div
                           key={ev.id}
@@ -884,8 +908,8 @@ export default function ChartPage() {
                             left: `${left}%`,
                             top: "50%",
                             transform: "translate(-50%, -50%)",
-                            width: 6,
-                            height: 6,
+                            width: size,
+                            height: size,
                             borderRadius: "50%",
                             background: color,
                             zIndex: 3,

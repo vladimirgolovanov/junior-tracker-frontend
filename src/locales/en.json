@@ -318,5 +318,7 @@
   "feedback_sending": "Sending…",
   "feedback_success": "Thanks! Your feedback has been sent.",
   "feedback_errorStatus": "Error {{status}}",
-  "feedback_networkError": "Network error"
+  "feedback_networkError": "Network error",
+  "feedback_intro": "",
+  "nav_support": "Support"
 }

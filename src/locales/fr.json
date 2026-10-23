@@ -301,5 +301,7 @@
   "feedback_sending": "Envoi…",
   "feedback_success": "Merci ! Votre commentaire a été envoyé.",
   "feedback_errorStatus": "Erreur {{status}}",
-  "feedback_networkError": "Erreur réseau"
+  "feedback_networkError": "Erreur réseau",
+  "feedback_intro": "",
+  "nav_support": "Assistance"
 }

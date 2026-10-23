@@ -318,5 +318,7 @@
   "feedback_sending": "Отправка…",
   "feedback_success": "Спасибо! Ваш отзыв отправлен.",
   "feedback_errorStatus": "Ошибка {{status}}",
-  "feedback_networkError": "Ошибка сети"
+  "feedback_networkError": "Ошибка сети",
+  "feedback_intro": "",
+  "nav_support": "Поддержка"
 }

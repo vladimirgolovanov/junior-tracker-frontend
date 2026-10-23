@@ -301,5 +301,7 @@
   "feedback_sending": "Gönderiliyor…",
   "feedback_success": "Teşekkürler! Geri bildiriminiz gönderildi.",
   "feedback_errorStatus": "Hata {{status}}",
-  "feedback_networkError": "Ağ hatası"
+  "feedback_networkError": "Ağ hatası",
+  "feedback_intro": "",
+  "nav_support": "Destek"
 }

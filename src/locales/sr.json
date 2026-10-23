@@ -301,5 +301,7 @@
   "feedback_sending": "Slanje…",
   "feedback_success": "Hvala! Vaše povratne informacije su poslate.",
   "feedback_errorStatus": "Greška {{status}}",
-  "feedback_networkError": "Greška mreže"
+  "feedback_networkError": "Greška mreže",
+  "feedback_intro": "",
+  "nav_support": "Podrška"
 }

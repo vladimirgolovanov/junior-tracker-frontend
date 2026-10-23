@@ -301,5 +301,7 @@
   "feedback_sending": "Wird gesendet…",
   "feedback_success": "Danke! Dein Feedback wurde gesendet.",
   "feedback_errorStatus": "Fehler {{status}}",
-  "feedback_networkError": "Netzwerkfehler"
+  "feedback_networkError": "Netzwerkfehler",
+  "feedback_intro": "",
+  "nav_support": "Support"
 }
