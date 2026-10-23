@@ -169,7 +169,7 @@ function colorForEventType(color: string | null): string {
 // default size.
 const DOT_DEFAULT_PX = 6;
 const DOT_MIN_PX = 5;
-const DOT_MAX_PX = 14;
+const DOT_MAX_PX = 8;
 
 function volumeToDiameter(volume: number | null | undefined, maxVolume: number): number {
   if (volume == null || volume <= 0) return DOT_DEFAULT_PX;
